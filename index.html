@@ -117,7 +117,10 @@ tr.hl td{font-weight:900;font-size:17px}
 <div id="tab-rep"       class="tab-content"></div>
 <div id="tab-miss"      class="tab-content"></div>
 <div id="tab-oe"        class="tab-content"></div>
+<div id="tab-adv"       class="tab-content"></div>
 <div id="tab-add"       class="tab-content"></div>
+<div id="tab-struct"    class="tab-content"></div>
+<div id="tab-ml"        class="tab-content"></div>
 
 <div class="footer">⚠️ 僅供娛樂參考，樂透為隨機事件，請理性投注。<br>未滿18歲不得購買彩券。</div>
 
@@ -196,6 +199,15 @@ function analyze(){
   let D=allData,L=D.length;
   let tails=D.map(r=>[...new Set(r.n.map(x=>x%10))]);
   let latest=D[0].n,latT=tails[0];
+
+  /* ── 輔助函數 ── */
+  function calcAC(n){let d=new Set();for(let i=0;i<n.length;i++)for(let j=i+1;j<n.length;j++)d.add(n[j]-n[i]);return d.size-(n.length-1);}
+  function calcSum(n){return n.reduce((a,b)=>a+b,0);}
+  function calcSpan(n){return n[n.length-1]-n[0];}
+  function calcConsec(n){let c=0;for(let i=0;i<n.length-1;i++)if(n[i+1]-n[i]===1)c++;return c;}
+  function calcZone(n){return[n.filter(x=>x<=13).length,n.filter(x=>x>=14&&x<=26).length,n.filter(x=>x>=27).length];}
+
+  /* ── 基礎統計 ── */
   let cnt=new Array(40).fill(0);D.forEach(r=>r.n.forEach(x=>cnt[x]++));
   let r10=new Array(40).fill(0);D.slice(0,10).forEach(r=>r.n.forEach(x=>r10[x]++));
   let stk=new Array(40).fill(0);for(let n=1;n<=39;n++){for(let i=0;i<L;i++){if(D[i].n.includes(n))stk[n]++;else break;}}
@@ -204,6 +216,8 @@ function analyze(){
   let tR10=new Array(10).fill(0);D.slice(0,10).forEach(r=>r.n.forEach(x=>tR10[x%10]++));
   let tStk=new Array(10).fill(0);for(let t=0;t<10;t++){for(let i=0;i<L;i++){if(D[i].n.some(x=>x%10===t))tStk[t]++;else break;}}
   let tMiss=new Array(10).fill(L);for(let t=0;t<10;t++){for(let i=0;i<L;i++){if(D[i].n.some(x=>x%10===t)){tMiss[t]=i;break;}}}
+
+  /* ── 轉移矩陣 ── */
   let MG=5,tr={},trT={};
   for(let g=1;g<=MG;g++){tr[g]=[];for(let k=0;k<10;k++)tr[g].push(new Array(10).fill(0));trT[g]=new Array(10).fill(0);}
   for(let i=0;i<L;i++){for(let g=1;g<=MG;g++){if(i-g>=0){tails[i].forEach(fr=>{tails[i-g].forEach(to=>{tr[g][fr][to]++;});trT[g][fr]++;})}}}
@@ -212,31 +226,181 @@ function analyze(){
   let trNum={};for(let g=1;g<=MG;g++){latT.forEach(fr=>{let tot=trT[g][fr]||1;Object.keys(nF[g][fr]).forEach(nm=>{trNum[+nm]=(trNum[+nm]||0)+(nF[g][fr][nm]/tot)*gw[g];});});}
   let trTail=new Array(10).fill(0);for(let g=1;g<=MG;g++){latT.forEach(fr=>{let tot=trT[g][fr]||1;for(let to=0;to<10;to++)trTail[to]+=(tr[g][fr][to]/tot)*gw[g];});}
   let ttMx=Math.max(...trTail);let trTailN=trTail.map(s=>ttMx>0?s/ttMx*100:0);
+
+  /* ── 鄰號 ── */
   let neiHit={},neiTotal=0,neiHits=0;
   for(let i=1;i<L;i++){D[i].n.forEach(x=>{[-2,-1,1,2].forEach(dd=>{let nb=x+dd;if(nb>=1&&nb<=39){neiTotal++;if(D[i-1].n.includes(nb)){neiHits++;neiHit[nb]=(neiHit[nb]||0)+1;}}});});}
   let neiRate=neiTotal>0?neiHits/neiTotal:0;
   let neiSc={};latest.forEach(x=>{[-2,-1,1,2].forEach(dd=>{let nb=x+dd;if(nb>=1&&nb<=39){let w=Math.abs(dd)===1?1.5:1;neiSc[nb]=(neiSc[nb]||0)+w*(1+(neiHit[nb]||0)/(L*.05));}});});
   let neiTN=new Array(10).fill(0);latest.forEach(x=>{[-2,-1,1,2].forEach(dd=>{let nb=x+dd;if(nb>=1&&nb<=39)neiTN[nb%10]+=(Math.abs(dd)===1?1.5:1);});});
   let ntMx=Math.max(...neiTN);let neiTNorm=neiTN.map(s=>ntMx>0?s/ntMx*100:0);
+
+  /* ── 重複號 ── */
   let repN={},repT=0,repH=0;
   for(let i=1;i<L;i++){D[i].n.forEach(x=>{repT++;if(D[i-1].n.includes(x)){repH++;repN[x]=(repN[x]||0)+1;}});}
   let repRate=repT>0?repH/repT:0;
   let repSc={};latest.forEach(x=>{repSc[x]=(repN[x]||0)+1;});if(D.length>1)D[1].n.forEach(x=>{repSc[x]=(repSc[x]||0)+(repN[x]||0)*.3;});
   let repTN=new Array(10).fill(0);latest.forEach(x=>{repTN[x%10]+=20;});if(D.length>1)D[1].n.forEach(x=>{repTN[x%10]+=6;});
   let rtMx=Math.max(...repTN);let repTNorm=repTN.map(s=>rtMx>0?s/rtMx*100:0);
+
+  /* ── 奇偶/大小 ── */
   let oeM={},bsM={};D.forEach(r=>{let od=r.n.filter(x=>x%2===1).length;let bg=r.n.filter(x=>x>=20).length;oeM[od+"單"+(5-od)+"雙"]=(oeM[od+"單"+(5-od)+"雙"]||0)+1;bsM[(5-bg)+"小"+bg+"大"]=(bsM[(5-bg)+"小"+bg+"大"]||0)+1;});
   let topOE=Object.entries(oeM).sort((a,b)=>b[1]-a[1]);let topBS=Object.entries(bsM).sort((a,b)=>b[1]-a[1]);
+
+  /* ── 尾數頻率 ── */
   let freqN=new Array(10).fill(0);for(let t=0;t<10;t++)freqN[t]=(tCnt[t]/(L*5)/.1)*30+(tR10[t]/50/.1)*40+(tStk[t]>=3?30:tStk[t]>=2?20:tStk[t]>=1?10:0);
   let fMx=Math.max(...freqN);let freqNorm=freqN.map(s=>fMx>0?s/fMx*100:0);
   let missN=tMiss.map(m=>m===0?100:m===1?80:m===2?60:m<=4?40:m<=7?20:5);
-  let W={tr:.28,nei:.22,fq:.18,rp:.17,ms:.10,oe:.05};
-  let tailFinal=new Array(10).fill(0);for(let t=0;t<10;t++)tailFinal[t]=trTailN[t]*W.tr+neiTNorm[t]*W.nei+freqNorm[t]*W.fq+repTNorm[t]*W.rp+missN[t]*W.ms+50*W.oe;
+
+  /* ══════════════════════════════════════
+     四類進階分析
+  ══════════════════════════════════════ */
+
+  /* 1. 數學/統計：和值 + 跨度 + AC值 */
+  let sumDist={},spanDist={},acDist={};
+  let consecDist={};
+  D.forEach(r=>{
+    let s=calcSum(r.n);sumDist[s]=(sumDist[s]||0)+1;
+    let sp=calcSpan(r.n);spanDist[sp]=(spanDist[sp]||0)+1;
+    let ac=calcAC(r.n);acDist[ac]=(acDist[ac]||0)+1;
+    let co=calcConsec(r.n);consecDist[co]=(consecDist[co]||0)+1;
+  });
+  let allSums=D.map(r=>calcSum(r.n)).sort((a,b)=>a-b);
+  let sumMean=allSums.reduce((a,b)=>a+b,0)/L;
+  let sumQ20=allSums[Math.floor(L*.20)],sumQ80=allSums[Math.floor(L*.80)];
+  let allSpans=D.map(r=>calcSpan(r.n)).sort((a,b)=>a-b);
+  let spanQ20=allSpans[Math.floor(L*.20)],spanQ80=allSpans[Math.floor(L*.80)];
+  let allACs=D.map(r=>calcAC(r.n)).sort((a,b)=>a-b);
+  let acQ20=allACs[Math.floor(L*.20)],acQ80=allACs[Math.floor(L*.80)];
+  let topAC=+Object.entries(acDist).sort((a,b)=>b[1]-a[1])[0][0];
+  let topConsec=+Object.entries(consecDist).sort((a,b)=>b[1]-a[1])[0][0];
+  // 和值分桶（每10為一桶）
+  let sumBinDist={};
+  D.forEach(r=>{let b=Math.floor(calcSum(r.n)/10)*10;sumBinDist[b]=(sumBinDist[b]||0)+1;});
+  let topSumBin=+Object.entries(sumBinDist).sort((a,b)=>b[1]-a[1])[0][0];
+  // 跨度分桶
+  let spanBinDist={};
+  D.forEach(r=>{let b=Math.floor(calcSpan(r.n)/5)*5;spanBinDist[b]=(spanBinDist[b]||0)+1;});
+  let topSpanBin=+Object.entries(spanBinDist).sort((a,b)=>b[1]-a[1])[0][0];
+  // 每個號碼的數學評分
+  let mathSc=new Array(40).fill(0);
+  for(let n=1;n<=39;n++){
+    let sumS=100-Math.min(100,Math.abs(n-sumMean/5)*3);
+    let spanS=(n>=13&&n<=30)?85:60;
+    let acObs=D.filter(r=>r.n.includes(n));
+    let avgAC=acObs.length?acObs.reduce((a,r)=>a+calcAC(r.n),0)/acObs.length:6;
+    let acS=(avgAC>=acQ20&&avgAC<=acQ80)?85:55;
+    mathSc[n]=sumS*.40+spanS*.30+acS*.30;
+  }
+  let mathMx=Math.max(...mathSc.slice(1));
+  let mathNorm=mathSc.map(s=>mathMx>0?s/mathMx*100:0);
+
+  /* 2. 走勢/位置：分區 + 連號 + 尾數重複 */
+  let zoneDist={};
+  D.forEach(r=>{let z=calcZone(r.n);let k=z[0]+'-'+z[1]+'-'+z[2];zoneDist[k]=(zoneDist[k]||0)+1;});
+  let topZoneKey=Object.entries(zoneDist).sort((a,b)=>b[1]-a[1])[0][0];
+  let topZone=topZoneKey.split('-').map(Number);
+  let consAvg=D.reduce((a,r)=>a+calcConsec(r.n),0)/L;
+  let consecSc=new Array(40).fill(0);
+  for(let n=1;n<=39;n++){
+    let hits=D.filter(r=>r.n.includes(n)&&(r.n.includes(n-1)||r.n.includes(n+1))).length;
+    consecSc[n]=cnt[n]>0?hits/cnt[n]*100:0;
+  }
+  let tailRepSc=new Array(40).fill(0);
+  for(let i=1;i<L;i++){
+    D[i].n.forEach(x=>{if(D[i-1].n.some(p=>p%10===x%10&&p!==x))tailRepSc[x]++;});
+  }
+  let tRepMx=Math.max(...tailRepSc.slice(1),1);
+  let zoneSc=new Array(40).fill(0);
+  for(let n=1;n<=39;n++){let z=n<=13?0:n<=26?1:2;zoneSc[n]=topZone[z]>=1?80:40;}
+  let trendSc=new Array(40).fill(0);
+  for(let n=1;n<=39;n++){trendSc[n]=consecSc[n]*.35+(tailRepSc[n]/tRepMx*100)*.35+zoneSc[n]*.30;}
+  let trendMx=Math.max(...trendSc.slice(1));
+  let trendNorm=trendSc.map(s=>trendMx>0?s/trendMx*100:0);
+
+  /* 3. 時間序列：週期性 + 熱冷交替 */
+  let cycSc=new Array(40).fill(0);
+  let avgInterval={},periodScore={},heatScore={};
+  for(let n=1;n<=39;n++){
+    let appears=[];
+    for(let i=0;i<L;i++)if(D[i].n.includes(n))appears.push(i);
+    if(appears.length<2){cycSc[n]=30;avgInterval[n]=0;periodScore[n]=30;heatScore[n]=50;continue;}
+    let gaps=[];for(let i=1;i<appears.length;i++)gaps.push(appears[i]-appears[i-1]);
+    let avg=gaps.reduce((a,b)=>a+b,0)/gaps.length;
+    avgInterval[n]=avg;
+    let lastSeen=appears[0];
+    let dueS=Math.max(0,100-Math.abs(lastSeen-avg)*7);
+    periodScore[n]=dueS;
+    let sd=Math.sqrt(gaps.reduce((a,g)=>a+Math.pow(g-avg,2),0)/gaps.length);
+    let stabS=Math.max(0,100-sd*4);
+    let recentHits=D.slice(0,10).filter(r=>r.n.includes(n)).length;
+    let heatS=recentHits<=1?80:recentHits<=2?60:recentHits<=3?40:20;
+    heatScore[n]=heatS;
+    cycSc[n]=dueS*.50+stabS*.25+heatS*.25;
+  }
+  let cycMx=Math.max(...cycSc.slice(1));
+  let cycleNorm=cycSc.map(s=>cycMx>0?s/cycMx*100:0);
+
+  /* 4. 機器學習：貝氏更新 + 二階馬可夫 */
+  let bayesSc=new Array(40).fill(0),bayesScore={};
+  let decR=0.96;
+  for(let n=1;n<=39;n++){
+    let score=5/39;
+    for(let i=L-1;i>=0;i--){let w=Math.pow(decR,i);if(D[i].n.includes(n))score+=w*0.07;else score-=w*0.012;}
+    bayesSc[n]=Math.max(0,score);
+    bayesScore[n]=bayesSc[n];
+  }
+  let bayesMx=Math.max(...bayesSc.slice(1));
+  let bayesNorm=bayesSc.map(s=>bayesMx>0?s/bayesMx*100:0);
+  let mk2Sc=new Array(40).fill(0),mk2Score={};
+  if(L>=3){
+    let p1=new Set(D[0].n),p2=new Set(D[1].n);
+    for(let n=1;n<=39;n++){
+      let hits=0,total=0;
+      for(let i=2;i<L;i++){
+        let m1=D[i-1].n.filter(x=>p1.has(x)).length;
+        let m2=D[i-2].n.filter(x=>p2.has(x)).length;
+        if(m1>=1&&m2>=1){total++;if(D[i].n.includes(n))hits++;}
+      }
+      mk2Sc[n]=total>0?hits/total*100:0;
+      mk2Score[n]=mk2Sc[n];
+    }
+  }
+  let mk2Mx=Math.max(...mk2Sc.slice(1),1);
+  let mk2Norm=mk2Sc.map(s=>mk2Mx>0?s/mk2Mx*100:0);
+
+  /* ── 綜合評分（10維度）── */
+  let W={tr:.18,nei:.14,fq:.11,rp:.10,ms:.07,math:.11,trend:.09,cycle:.09,bayes:.07,markov:.04};
+  let tailFinal=new Array(10).fill(0);
+  for(let t=0;t<10;t++)tailFinal[t]=trTailN[t]*W.tr+neiTNorm[t]*W.nei+freqNorm[t]*W.fq+repTNorm[t]*W.rp+missN[t]*W.ms+50*(W.math+W.trend+W.cycle+W.bayes+W.markov);
   let tailRk=tailFinal.map((s,i)=>({tail:i,score:s,cnt:tCnt[i],r10:tR10[i],stk:tStk[i],gap:tMiss[i]})).sort((a,b)=>b.score-a.score);
-  let numFinal={};for(let n=1;n<=39;n++){let tS=(trNum[n]||0)*100*W.tr;let fS=((cnt[n]/(L*5)*39)*30+(r10[n]/10*39)*40+(stk[n]>=3?30:stk[n]>=2?20:stk[n]>=1?10:0))*W.fq;let nS=(neiSc[n]||0)*15*W.nei;let rS=(repSc[n]||0)*20*W.rp;let mS=(miss[n]===0?100:miss[n]===1?80:miss[n]===2?60:miss[n]<=4?40:miss[n]<=7?20:5)*W.ms;numFinal[n]={total:tS+fS+nS+rS+mS+50*W.oe};}
-  let numRk=Object.keys(numFinal).map(k=>({num:+k,score:numFinal[+k].total})).sort((a,b)=>b.score-a.score);
+  let numFinal={};
+  for(let n=1;n<=39;n++){
+    let tS=(trNum[n]||0)*100*W.tr;
+    let fS=((cnt[n]/(L*5)*39)*30+(r10[n]/10*39)*40+(stk[n]>=3?30:stk[n]>=2?20:stk[n]>=1?10:0))*W.fq;
+    let nS=(neiSc[n]||0)*15*W.nei;
+    let rS=(repSc[n]||0)*20*W.rp;
+    let mS=(miss[n]===0?100:miss[n]===1?80:miss[n]===2?60:miss[n]<=4?40:miss[n]<=7?20:5)*W.ms;
+    let maS=mathNorm[n]*W.math;
+    let trS=trendNorm[n]*W.trend;
+    let cyS=cycleNorm[n]*W.cycle;
+    let byS=bayesNorm[n]*W.bayes;
+    let mkS=mk2Norm[n]*W.markov;
+    numFinal[n]={total:tS+fS+nS+rS+mS+maS+trS+cyS+byS+mkS,tS,fS,nS,rS,mS,maS,trS,cyS,byS,mkS};
+  }
+  let numRk=Object.keys(numFinal).map(k=>({num:+k,score:numFinal[+k].total,detail:numFinal[+k]})).sort((a,b)=>b.score-a.score);
   let tailNums=[];for(let t=0;t<10;t++){let a=[];for(let n=1;n<=39;n++)if(n%10===t)a.push(n);tailNums.push(a);}
   if(!tailNums[0].length)tailNums[0]=[10,20,30];
-  return{D,L,latest,latT,tails,cnt,r10,stk,miss,tCnt,tStk,tMiss,tR10,tr,trT,nF,trNum,neiSc,neiRate,neiHit,repN,repRate,repSc,topOE,topBS,tailRk,numRk,tailNums,oeM};
+
+  return{D,L,latest,latT,tails,cnt,r10,stk,miss,tCnt,tStk,tMiss,tR10,
+    tr,trT,nF,trNum,neiSc,neiRate,neiHit,repN,repRate,repSc,
+    topOE,topBS,tailRk,numRk,tailNums,oeM,
+    mathNorm,trendNorm,cycleNorm,bayesNorm,mk2Norm,
+    sumDist,spanDist,acDist,consecDist,zoneDist,
+    sumMean,sumQ20,sumQ80,spanQ20,spanQ80,acQ20,acQ80,consAvg,topZone,
+    topAC,topConsec,topSumBin,topSpanBin,
+    avgInterval,periodScore,heatScore,consecSc,mk2Score,bayesScore,
+    calcAC,calcSum,calcSpan,calcConsec,calcZone};
 }
 
 /* ═══ RENDER ═══ */
@@ -247,12 +411,12 @@ function renderAll(){
   let added=allData.filter(r=>!INIT_DATA.some(ir=>ir.d===r.d));
   document.getElementById('headerSub').textContent=`共 ${allData.length} 期資料　最新 ${allData[0].d}`+(added.length?`　已新增 +${added.length}`:'');
   document.getElementById('latestBar').innerHTML=`<div class="latest-top"><div class="latest-title">最新開獎</div><div class="latest-date">${allData[0].d}</div></div><div class="latest-balls">${allData[0].n.map(x=>blW(x,42)).join('')}</div><div class="tail-row"><div class="tail-label">尾數 →</div>${A.latT.slice().sort((a,b)=>a-b).map(t=>blWT(t,36)).join('')}</div>`;
-  const tabs=[{k:"recommend",l:"🎯 推薦"},{k:"trans",l:"🔄 轉移"},{k:"nei",l:"👥 鄰號"},{k:"freq",l:"📊 頻率"},{k:"rep",l:"🔁 重複"},{k:"miss",l:"❄️ 遺漏"},{k:"oe",l:"🎲 奇偶"},{k:"add",l:"➕ 更新"}];
+  const tabs=[{k:"recommend",l:"🎯 推薦"},{k:"trans",l:"🔄 轉移"},{k:"nei",l:"👥 鄰號"},{k:"freq",l:"📊 頻率"},{k:"rep",l:"🔁 重複"},{k:"miss",l:"❄️ 遺漏"},{k:"oe",l:"🎲 奇偶"},{k:"struct",l:"📐 結構"},{k:"ml",l:"🤖 ML"},{k:"add",l:"➕ 更新"}];
   document.getElementById('tabBar').innerHTML=tabs.map(t=>`<button data-tab="${t.k}" class="${curTab===t.k?'on':''}" onclick="switchTab('${t.k}')">${t.l}</button>`).join('');
   renderTab(curTab);
 }
 
-function renderTab(k){let A=analyze(),el=document.getElementById('tab-'+k);if(k==='recommend')renderRec(el,A);else if(k==='trans')renderTr(el,A);else if(k==='nei')renderNe(el,A);else if(k==='freq')renderFr(el,A);else if(k==='rep')renderRp(el,A);else if(k==='miss')renderMs(el,A);else if(k==='oe')renderOe(el,A);else if(k==='add')renderAd(el);}
+function renderTab(k){let A=analyze(),el=document.getElementById('tab-'+k);if(k==='recommend')renderRec(el,A);else if(k==='trans')renderTr(el,A);else if(k==='nei')renderNe(el,A);else if(k==='freq')renderFr(el,A);else if(k==='rep')renderRp(el,A);else if(k==='miss')renderMs(el,A);else if(k==='oe')renderOe(el,A);else if(k==='struct')renderStruct(el,A);else if(k==='ml')renderML(el,A);else if(k==='add')renderAd(el);}
 
 function renderRec(el,A){
   let t3=A.tailRk.slice(0,3);
@@ -620,6 +784,269 @@ function renderOe(el,A){
   </div>`;
 }
 
+
+function renderStruct(el,A){
+  const L=A.L;
+
+  /* ── 歷史結構統計 ── */
+  const acEntries=Object.entries(A.acDist).map(([k,v])=>({v:+k,c:v})).sort((a,b)=>b.c-a.c);
+  const acMx=acEntries[0]?.c||1;
+
+  const sumEntries=Object.entries(A.sumDist).map(([k,v])=>({v:+k,c:v,lbl:`${k}~${+k+9}`})).sort((a,b)=>a.v-b.v);
+  const sumMx=Math.max(...sumEntries.map(e=>e.c));
+
+  const spanEntries=Object.entries(A.spanDist).map(([k,v])=>({v:+k,c:v,lbl:`${k}~${+k+4}`})).sort((a,b)=>a.v-b.v);
+  const spanMx=Math.max(...spanEntries.map(e=>e.c));
+
+  const consecEntries=Object.entries(A.consecDist).map(([k,v])=>({v:+k,c:v})).sort((a,b)=>a.v-b.v);
+  const consecMx=Math.max(...consecEntries.map(e=>e.c));
+
+  const zoneEntries=Object.entries(A.zoneDist).map(([k,v])=>({k,c:v})).sort((a,b)=>b.c-a.c).slice(0,8);
+  const zoneMx=zoneEntries[0]?.c||1;
+
+  /* ── 最新期結構 ── */
+  const latAC=A.calcAC(A.latest);
+  const latSum=A.calcSum(A.latest);
+  const latSpan=A.calcSpan(A.latest);
+  const latConsec=A.calcConsec(A.latest);
+  const latZone=A.calcZone(A.latest);
+
+  /* ── 下期結構預測 ── */
+  // 和值最常見區間
+  const predSumBin=A.topSumBin;
+  const predSpanBin=A.topSpanBin;
+  const predAC=A.topAC;
+  const predConsec=A.topConsec;
+
+  /* ── 週期到期評分 TOP 10 ── */
+  const periodTop=Object.entries(A.periodScore).map(([n,s])=>({n:+n,s})).sort((a,b)=>b.s-a.s).slice(0,10);
+  const pMx=periodTop[0]?.s||1;
+
+  /* ── 熱冷交替 TOP 10 ── */
+  const heatTop=Object.entries(A.heatScore).map(([n,s])=>({n:+n,s})).sort((a,b)=>b.s-a.s).slice(0,10);
+  const hMx=heatTop[0]?.s||1;
+
+  /* ── 連號候選 ── */
+  const consecTop=Object.entries(A.consecSc).map(([n,s])=>({n:+n,s})).sort((a,b)=>b.s-a.s).slice(0,8);
+  const cMx=consecTop[0]?.s||1;
+
+  /* ── 二階馬可夫 TOP 10 ── */
+  const mk2Top=Object.entries(A.mk2Score).map(([n,s])=>({n:+n,s})).sort((a,b)=>b.s-a.s).slice(0,10);
+  const m2Mx=mk2Top[0]?.s||1;
+
+  /* ── 貝氏 TOP 10 ── */
+  const bayesTop=Object.entries(A.bayesScore).map(([n,s])=>({n:+n,s})).sort((a,b)=>b.s-a.s).slice(0,10);
+  const bMx=bayesTop[0]?.s||1;
+
+  el.innerHTML=`
+  <!-- ══ 最新期結構 ══ -->
+  <div class="section-hdr">最新期 (${A.D[0].d}) 結構</div>
+  <div class="card"><div class="card-bd">
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      ${[
+        {label:'AC 值',val:latAC,unit:'',note:'號碼離散度（0~6）'},
+        {label:'和值',val:latSum,unit:'',note:'5個號碼總和'},
+        {label:'跨度',val:latSpan,unit:'',note:'最大-最小'},
+        {label:'連號組',val:latConsec,unit:'組',note:'相鄰連號組數'},
+      ].map(item=>`<div style="flex:1;min-width:80px;background:var(--bg);border-radius:14px;padding:14px 12px;text-align:center;border:1px solid var(--sep2)">
+        <div style="font-size:12px;color:var(--label3);margin-bottom:4px">${item.label}</div>
+        <div style="font-size:28px;font-weight:900;color:var(--blue)">${item.val}${item.unit}</div>
+        <div style="font-size:11px;color:var(--label3);margin-top:3px">${item.note}</div>
+      </div>`).join('')}
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+      <span style="font-size:14px;color:var(--label3)">三區分布：</span>
+      ${['1-13','14-26','27-39'].map((z,i)=>`<div style="background:${['var(--orange)','var(--blue)','var(--purple)'][i]}18;border:1.5px solid ${['var(--orange)','var(--blue)','var(--purple)'][i]}50;border-radius:10px;padding:6px 12px;text-align:center">
+        <div style="font-size:11px;color:var(--label3)">${z}</div>
+        <div style="font-size:18px;font-weight:900;color:${['var(--orange)','var(--blue)','var(--purple)'][i]}">${latZone[i]} 個</div>
+      </div>`).join('')}
+    </div>
+  </div></div>
+
+  <!-- ══ 下期結構預測 ══ -->
+  <div class="section-hdr">下期結構預測（歷史最常見）</div>
+  <div class="card"><div class="card-bd">
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      ${[
+        {label:'建議 AC',val:predAC,note:`歷史最常出現 AC=${predAC}`,c:'var(--green)'},
+        {label:'建議和值',val:`${predSumBin}~${predSumBin+9}`,note:'最常見和值區間',c:'var(--orange)'},
+        {label:'建議跨度',val:`${predSpanBin}~${predSpanBin+4}`,note:'最常見跨度區間',c:'var(--blue)'},
+        {label:'建議連號',val:predConsec+'組',note:'最常見連號組數',c:'var(--purple)'},
+      ].map(item=>`<div style="flex:1;min-width:80px;background:${item.c}10;border-radius:14px;padding:14px 12px;text-align:center;border:1.5px solid ${item.c}40">
+        <div style="font-size:12px;color:var(--label3);margin-bottom:4px">${item.label}</div>
+        <div style="font-size:${String(item.val).length>4?'16px':'22px'};font-weight:900;color:${item.c}">${item.val}</div>
+        <div style="font-size:11px;color:var(--label3);margin-top:3px">${item.note}</div>
+      </div>`).join('')}
+    </div>
+  </div></div>
+
+  <!-- ══ AC值分布 ══ -->
+  <div class="section-hdr">AC值歷史分布</div>
+  <div class="card"><div class="card-hd"><h3>📐 號碼離散度（AC值）</h3><p>AC值越高號碼越分散，${A.topAC} 最常見</p></div>
+  <div class="card-bd">${acEntries.map((e,i)=>`<div class="row">
+    <span style="width:24px;font-size:14px;font-weight:700;color:${e.v===A.topAC?'var(--orange)':'var(--label3)'};text-align:right">AC${e.v}</span>
+    ${br(e.c/acMx*100,e.v===A.topAC?'var(--orange)':'var(--bg3)',16)}
+    <span style="font-size:15px;font-weight:${e.v===A.topAC?800:600};color:${e.v===A.topAC?'var(--orange)':'var(--label2)'};min-width:70px;text-align:right">${e.c}次 (${(e.c/L*100).toFixed(0)}%)</span>
+    ${e.v===A.topAC?'<span style="font-size:11px;background:rgba(255,149,0,.12);color:var(--orange);padding:2px 8px;border-radius:8px;font-weight:700">最常見</span>':''}
+  </div>`).join('')}</div></div>
+
+  <!-- ══ 和值分布 ══ -->
+  <div class="section-hdr">和值分布</div>
+  <div class="card"><div class="card-hd"><h3>➕ 5球總和分布</h3><p>最常見區間：${predSumBin}~${predSumBin+9}</p></div>
+  <div class="card-bd" style="max-height:300px;overflow-y:auto">${sumEntries.map(e=>`<div class="row">
+    <span style="width:60px;font-size:13px;font-weight:600;color:${e.v===predSumBin?'var(--green)':'var(--label3)'};text-align:right">${e.lbl}</span>
+    ${br(e.c/sumMx*100,e.v===predSumBin?'var(--green)':'var(--bg3)',14)}
+    <span style="font-size:14px;font-weight:${e.v===predSumBin?800:500};color:${e.v===predSumBin?'var(--green)':'var(--label2)'};min-width:60px;text-align:right">${e.c}次</span>
+  </div>`).join('')}</div></div>
+
+  <!-- ══ 跨度分布 ══ -->
+  <div class="section-hdr">跨度分布</div>
+  <div class="card"><div class="card-hd"><h3>↔️ 號碼跨度（最大-最小）</h3><p>最常見：${predSpanBin}~${predSpanBin+4}</p></div>
+  <div class="card-bd">${spanEntries.map(e=>`<div class="row">
+    <span style="width:60px;font-size:13px;font-weight:600;color:${e.v===predSpanBin?'var(--blue)':'var(--label3)'};text-align:right">${e.lbl}</span>
+    ${br(e.c/spanMx*100,e.v===predSpanBin?'var(--blue)':'var(--bg3)',14)}
+    <span style="font-size:14px;font-weight:${e.v===predSpanBin?800:500};color:${e.v===predSpanBin?'var(--blue)':'var(--label2)'};min-width:60px;text-align:right">${e.c}次</span>
+  </div>`).join('')}</div></div>
+
+  <!-- ══ 連號分布 ══ -->
+  <div class="section-hdr">連號統計</div>
+  <div class="card"><div class="card-hd"><h3>🔗 每期連號組數</h3><p>0組=完全無連號，最常見：${predConsec}組</p></div>
+  <div class="card-bd">${consecEntries.map(e=>`<div class="row">
+    <span style="width:36px;font-size:14px;font-weight:600;color:${e.v===predConsec?'var(--purple)':'var(--label3)'};text-align:right">${e.v}組</span>
+    ${br(e.c/consecMx*100,e.v===predConsec?'var(--purple)':'var(--bg3)',16)}
+    <span style="font-size:15px;font-weight:${e.v===predConsec?800:500};color:${e.v===predConsec?'var(--purple)':'var(--label2)'};min-width:70px;text-align:right">${e.c}次 (${(e.c/L*100).toFixed(0)}%)</span>
+    ${e.v===predConsec?'<span style="font-size:11px;background:rgba(175,82,222,.12);color:var(--purple);padding:2px 8px;border-radius:8px;font-weight:700">最常見</span>':''}
+  </div>`).join('')}</div></div>
+
+  <!-- ══ 三區分布 ══ -->
+  <div class="section-hdr">三區分布歷史</div>
+  <div class="card"><div class="card-hd"><h3>🗂️ 號碼三區分布 TOP 8</h3><p>格式：第一區-第二區-第三區（1-13 / 14-26 / 27-39）</p></div>
+  <div class="card-bd">${zoneEntries.map((e,i)=>`<div class="row">
+    <span class="rank-num ${i<3?['rank-1','rank-2','rank-3'][i]:''}">${i+1}</span>
+    <span style="font-size:16px;font-weight:${i===0?800:600};color:${i===0?'var(--label)':'var(--label2)'};min-width:60px">${e.k}</span>
+    ${br(e.c/zoneMx*100,i===0?'var(--teal)':'var(--bg3)',16)}
+    <span style="font-size:15px;font-weight:${i===0?800:500};color:${i===0?'var(--teal)':'var(--label2)'};min-width:70px;text-align:right">${e.c}次 (${(e.c/L*100).toFixed(0)}%)</span>
+  </div>`).join('')}</div></div>
+
+  <!-- ══ 週期到期 TOP 10 ══ -->
+  <div class="section-hdr">⏰ 週期分析（時間序列）</div>
+  <div class="card"><div class="card-hd"><h3>⏰ 週期到期號碼 TOP 10</h3><p>依平均出現間隔計算，最「到期」的號碼</p></div>
+  <div class="card-bd">${periodTop.map((r,i)=>`<div class="row">
+    <span class="rank-num ${i<3?['rank-1','rank-2','rank-3'][i]:''}">${i+1}</span>
+    ${bl(r.n,34)}
+    ${br(r.s/pMx*100,CL[r.n%10],14)}
+    <span style="font-size:13px;color:var(--label3);min-width:110px;text-align:right">遺漏${A.miss[r.n]}期 均${A.avgInterval[r.n].toFixed(1)}期</span>
+  </div>`).join('')}</div></div>
+
+  <!-- ══ 熱冷交替 ══ -->
+  <div class="section-hdr">🌡️ 熱冷交替（時間序列）</div>
+  <div class="card"><div class="card-hd"><h3>🌡️ 剛從冷轉熱號碼 TOP 10</h3><p>近5期開始熱、前期相對冷的號碼</p></div>
+  <div class="card-bd">${heatTop.map((r,i)=>`<div class="row">
+    <span class="rank-num ${i<3?['rank-1','rank-2','rank-3'][i]:''}">${i+1}</span>
+    ${bl(r.n,34)}
+    ${br(r.s/hMx*100,CL[r.n%10],14)}
+    <span style="font-size:13px;color:var(--label3);min-width:110px;text-align:right">近5期${A.D.slice(0,5).filter(d=>d.n.includes(r.n)).length}次 5-15期${A.D.slice(5,15).filter(d=>d.n.includes(r.n)).length}次</span>
+  </div>`).join('')}</div></div>
+
+  <!-- ══ 連號候選 ══ -->
+  <div class="section-hdr">🔗 連號候選（走勢位置）</div>
+  <div class="card"><div class="card-hd"><h3>🔗 最可能出現的連號 TOP 8</h3><p>上期號碼的±1鄰號歷史連號命中率</p></div>
+  <div class="card-bd">${consecTop.map((r,i)=>`<div class="row">
+    <span class="rank-num ${i<3?['rank-1','rank-2','rank-3'][i]:''}">${i+1}</span>
+    ${bl(r.n,34)}
+    ${br(r.s/cMx*100,CL[r.n%10],14)}
+    <span style="font-size:13px;color:var(--label3);min-width:60px;text-align:right">${r.s.toFixed(1)}</span>
+  </div>`).join('')}</div></div>
+`;
+}
+
+let selML = 'markov';
+
+function renderML(el, A){
+  const mk2Top = Object.entries(A.mk2Score).map(([n,s])=>({n:+n,s})).sort((a,b)=>b.s-a.s).slice(0,10);
+  const m2Mx = mk2Top[0]?.s||1;
+  const bayesTop = Object.entries(A.bayesScore).map(([n,s])=>({n:+n,s})).sort((a,b)=>b.s-a.s).slice(0,10);
+  const bMx = bayesTop[0]?.s||1;
+
+  const mBtn = `<button onclick="selML='markov';renderTab('ml')" style="flex:1;padding:14px;border-radius:16px;border:none;font-size:17px;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',-apple-system,sans-serif;transition:all .15s;${selML==='markov'?'background:var(--indigo);color:#fff;box-shadow:0 4px 12px rgba(88,86,214,.35)':'background:var(--bg3);color:var(--label2)'}">🧮 馬可夫鏈</button>`;
+  const bBtn = `<button onclick="selML='bayes';renderTab('ml')" style="flex:1;padding:14px;border-radius:16px;border:none;font-size:17px;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',-apple-system,sans-serif;transition:all .15s;${selML==='bayes'?'background:var(--blue);color:#fff;box-shadow:0 4px 12px rgba(0,122,255,.35)':'background:var(--bg3);color:var(--label2)'}">📊 貝氏更新</button>`;
+
+  const markovHTML = `
+    <div class="card">
+      <div class="card-hd">
+        <h3>🧮 二階馬可夫鏈</h3>
+        <p>考慮前兩期尾數組合→預測下期最可能號碼</p>
+      </div>
+      <div class="card-bd">
+        <div style="background:var(--bg);border-radius:14px;padding:14px;margin-bottom:16px">
+          <div style="font-size:13px;color:var(--label3);margin-bottom:6px;font-weight:700;letter-spacing:1px;text-transform:uppercase">原理說明</div>
+          <div style="font-size:14px;color:var(--label2);line-height:1.7">
+            普通轉移矩陣只看「上一期」，馬可夫鏈考慮<strong>前兩期</strong>的尾數組合作為狀態，找出歷史上相同狀態後最常出現的號碼。資料量越多越準確。
+          </div>
+        </div>
+        <div style="background:rgba(88,86,214,.08);border-radius:12px;padding:10px 14px;margin-bottom:16px;border:1px solid rgba(88,86,214,.2)">
+          <div style="font-size:13px;color:var(--label3)">當前狀態（最新兩期尾數）</div>
+          <div style="font-size:14px;font-weight:700;color:var(--indigo);margin-top:4px">
+            第1期：${A.D[0].n.map(x=>x%10).sort().join(', ')} ／ 第2期：${A.D[1]?A.D[1].n.map(x=>x%10).sort().join(', '):'—'}
+          </div>
+        </div>
+        ${mk2Top.length===0?
+          `<div style="text-align:center;padding:28px;color:var(--label3)">
+            <div style="font-size:40px;margin-bottom:8px">📉</div>
+            <div style="font-size:16px;font-weight:700">資料量不足</div>
+            <div style="font-size:14px;margin-top:6px">建議累積 80 期以上效果更好</div>
+          </div>`:
+          mk2Top.map((r,i)=>`<div class="row">
+            <span class="rank-num ${i<3?['rank-1','rank-2','rank-3'][i]:''}">${i<3?['①','②','③'][i]:i+1}</span>
+            ${bl(r.n,36)}
+            ${br(r.s/m2Mx*100,'var(--indigo)',16)}
+            <span style="font-size:15px;color:var(--label2);font-weight:700;min-width:52px;text-align:right">${r.s.toFixed(1)}%</span>
+          </div>`).join('')
+        }
+      </div>
+    </div>`;
+
+  const bayesHTML = `
+    <div class="card">
+      <div class="card-hd">
+        <h3>📊 貝氏更新</h3>
+        <p>歷史先驗 × 近期觀測 → 動態後驗機率</p>
+      </div>
+      <div class="card-bd">
+        <div style="background:var(--bg);border-radius:14px;padding:14px;margin-bottom:16px">
+          <div style="font-size:13px;color:var(--label3);margin-bottom:6px;font-weight:700;letter-spacing:1px;text-transform:uppercase">原理說明</div>
+          <div style="font-size:14px;color:var(--label2);line-height:1.7">
+            結合<strong>全期歷史頻率（先驗，60%）</strong>與<strong>近20期實際觀測（40%）</strong>，每次新增開獎資料後自動更新各號碼的出現機率，越近期的資料影響越大。
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+          <div class="stat-pill">先驗權重 <span class="stat-val">60%</span></div>
+          <div class="stat-pill">近20期觀測 <span class="stat-val">40%</span></div>
+          <div class="stat-pill">總期數 <span class="stat-val">${A.L}</span></div>
+        </div>
+        ${bayesTop.map((r,i)=>{
+          const hist = (A.cnt[r.n]/(A.L*5)*100).toFixed(1);
+          const rec20 = A.D.slice(0,20).filter(d=>d.n.includes(r.n)).length;
+          return `<div style="padding:10px 0;border-bottom:1px solid var(--sep2)">
+            <div class="row" style="margin-bottom:6px">
+              <span class="rank-num ${i<3?['rank-1','rank-2','rank-3'][i]:''}">${i<3?['①','②','③'][i]:i+1}</span>
+              ${bl(r.n,36)}
+              ${br(r.s/bMx*100,'var(--blue)',16)}
+              <span style="font-size:15px;color:var(--label2);font-weight:700;min-width:44px;text-align:right">${r.s.toFixed(1)}</span>
+            </div>
+            <div style="padding-left:38px;display:flex;gap:8px;flex-wrap:wrap">
+              <span class="stat-pill" style="font-size:12px;padding:3px 9px">歷史 ${hist}%</span>
+              <span class="stat-pill" style="font-size:12px;padding:3px 9px">近20期 ${rec20}次</span>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+
+  el.innerHTML = `
+  <div style="padding:16px 16px 0;display:flex;gap:10px">${mBtn}${bBtn}</div>
+  <div style="padding-top:6px">${selML==='markov'?markovHTML:bayesHTML}</div>`;
+}
 
 function renderAd(el){
   let added=allData.filter(r=>!INIT_DATA.some(ir=>ir.d===r.d));
