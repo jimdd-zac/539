@@ -180,7 +180,7 @@ const CL=["#ff3b30","#ff9500","#cc9900","#34c759","#0a84ff","#007aff","#af52de",
 const MEDALS=["🥇","🥈","🥉"];
 const MCOLS=["#b8860b","#636366","#7d5a3c"];
 
-let allData=[],curTab="recommend",selGap=1;
+let allData=[],curTab="recommend",selGap=1,selNum=1;
 function comb(n,r){if(r>n)return 0;let res=1;for(let i=0;i<r;i++)res=res*(n-i)/(i+1);return Math.round(res);}
 function bl(v,sz,filled){sz=sz||36;let t=v%10;if(filled)return`<span class="ball" style="width:${sz}px;height:${sz}px;font-size:${sz*.44}px;background:${CL[t]};color:#fff;box-shadow:0 2px 6px ${CL[t]}55">${v}</span>`;return`<span class="ball" style="width:${sz}px;height:${sz}px;font-size:${sz*.38}px;background:${CL[t]}18;color:${CL[t]};border:2.5px solid ${CL[t]}90">${String(v).padStart(2,'0')}</span>`;}
 function blW(v,sz){sz=sz||38;return`<span class="ball" style="width:${sz}px;height:${sz}px;font-size:${sz*.4}px;background:rgba(255,255,255,0.22);color:#fff;border:2px solid rgba(255,255,255,0.55)">${String(v).padStart(2,'0')}</span>`;}
@@ -315,7 +315,7 @@ function calcNumTrans(D, gap){
 function renderTr(el,A){
   const gB=[1,2,3,4,5].map(g=>`<button class="btn-gap ${selGap===g?'on':''}" onclick="selGap=${g};renderTab('trans')">隔 ${g} 期</button>`).join('');
 
-  /* ── 尾數轉移 ── */
+  /* ── 尾數轉移（最新期） ── */
   const tailRows=A.latT.slice().sort((a,b)=>a-b).map(fr=>{
     const tot=A.trT[selGap][fr]||1;
     const row=A.tr[selGap][fr].map((c,to)=>({to,pct:c/tot*100})).sort((a,b)=>b.pct-a.pct);
@@ -325,23 +325,19 @@ function renderTr(el,A){
     </div>`;
   }).join('');
 
-  /* ── 號碼轉移 ── */
-  const {cnt,total}=calcNumTrans(A.D, selGap);
-  const numRows=A.latest.map(fr=>{
-    const tot=total[fr]||1;
+  /* ── 號碼轉移（最新期） ── */
+  const {cnt:cntNew, total:totalNew}=calcNumTrans(A.D, selGap);
+  const numRowsLatest=A.latest.map(fr=>{
+    const tot=totalNew[fr]||1;
     const candidates=[];
-    for(let to=1;to<=39;to++){
-      const c=cnt[fr+'-'+to]||0;
-      if(c>0) candidates.push({to,c,pct:c/tot*100});
-    }
+    for(let to=1;to<=39;to++){const c=cntNew[fr+'-'+to]||0;if(c>0)candidates.push({to,c,pct:c/tot*100});}
     candidates.sort((a,b)=>b.c-a.c);
-    const top=candidates.slice(0,8);
-    const mxC=top.length?top[0].c:1;
+    const top=candidates.slice(0,8);const mxC=top.length?top[0].c:1;
     return`<div style="padding:14px 20px;border-bottom:1px solid var(--sep2)">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
         ${bl(fr,38)}<div>
-          <div style="font-size:16px;font-weight:700;color:var(--label)">號碼 ${String(fr).padStart(2,'0')} 出現後　隔 ${selGap} 期</div>
-          <div style="font-size:13px;color:var(--label3)">最常跟著出現的號碼（共統計 ${tot} 次）</div>
+          <div style="font-size:16px;font-weight:700;color:var(--label)">號碼 ${String(fr).padStart(2,'0')} 出現後，隔 ${selGap} 期</div>
+          <div style="font-size:13px;color:var(--label3)">最常跟著出現的號碼（統計 ${tot} 次）</div>
         </div>
       </div>
       <div style="padding-left:48px">
@@ -356,23 +352,74 @@ function renderTr(el,A){
     </div>`;
   }).join('');
 
-  /* ── 號碼轉移綜合 TOP 10 ── */
+  /* ── 自選號碼查詢 ── */
+  const {cnt:cntAll, total:totalAll}=calcNumTrans(A.D, selGap);
+  const qFr=selNum;
+  const qTot=totalAll[qFr]||0;
+  const qCands=[];
+  for(let to=1;to<=39;to++){const c=cntAll[qFr+'-'+to]||0;if(c>0)qCands.push({to,c,pct:c/(qTot||1)*100});}
+  qCands.sort((a,b)=>b.c-a.c);
+  const qTop=qCands.slice(0,10);const qMx=qTop.length?qTop[0].c:1;
+
+  // 號碼選擇器（1~39 格狀排列）
+  const numPicker=Array.from({length:39},(_,i)=>i+1).map(n=>{
+    const isSelected=n===selNum;
+    return`<span onclick="selNum=${n};renderTab('trans')" style="cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;font-size:13px;font-weight:800;margin:3px;
+      background:${isSelected?CL[n%10]:'rgba(0,0,0,0.05)'};
+      color:${isSelected?'#fff':CL[n%10]};
+      border:2px solid ${isSelected?CL[n%10]:CL[n%10]+'60'};
+      box-shadow:${isSelected?'0 2px 8px '+CL[n%10]+'60':'none'}">${String(n).padStart(2,'0')}</span>`;
+  }).join('');
+
+  const queryResult=qTot===0
+    ?`<div style="padding:20px;text-align:center;color:var(--label3);font-size:15px">資料不足，無法分析</div>`
+    :`<div style="padding:4px 20px 16px">
+      <div style="font-size:13px;color:var(--label3);margin-bottom:12px">共統計 ${qTot} 次出現紀錄</div>
+      ${qTop.map((r,i)=>`<div class="row">
+        <span class="rank-num ${i<3?['rank-1','rank-2','rank-3'][i]:''}">${i+1}</span>
+        ${bl(r.to,36)}
+        ${br(r.c/qMx*100,CL[r.to%10],16)}
+        <span style="font-size:16px;color:${i===0?'var(--orange)':'var(--label2)'};font-weight:${i===0?800:600};min-width:80px;text-align:right">${r.c} 次 (${r.pct.toFixed(0)}%)</span>
+      </div>`).join('')}
+    </div>`;
+
+  /* ── 綜合轉移預測 TOP 10 ── */
   const trTop=Object.entries(A.trNum).map(e=>({num:+e[0],score:e[1]*100})).sort((a,b)=>b.score-a.score);
   const mx=trTop.length?trTop[0].score:1;
 
   el.innerHTML=`
   <div style="padding:14px 16px 0;display:flex;gap:8px;flex-wrap:wrap">${gB}</div>
 
-  <div class="section-hdr">尾數轉移分析</div>
+  <div class="section-hdr">尾數轉移（最新期）</div>
   <div class="card">
     <div class="card-hd"><h3>🔄 尾數轉移</h3><p>最新期各尾數，隔 ${selGap} 期後最常出現的尾數</p></div>
     ${tailRows}
   </div>
 
-  <div class="section-hdr">號碼轉移分析</div>
+  <div class="section-hdr">號碼轉移（最新期）</div>
   <div class="card">
     <div class="card-hd"><h3>🎯 號碼轉移</h3><p>最新期各號碼，隔 ${selGap} 期後最常跟著出現的號碼</p></div>
-    ${numRows}
+    ${numRowsLatest}
+  </div>
+
+  <div class="section-hdr">自選號碼查詢</div>
+  <div class="card">
+    <div class="card-hd">
+      <h3>🔍 任意號碼查詢</h3>
+      <p>選一個號碼，查它出現後隔 ${selGap} 期最常開出什麼</p>
+    </div>
+    <div style="padding:16px 20px;border-bottom:1px solid var(--sep2)">
+      <div style="font-size:13px;font-weight:700;color:var(--label3);margin-bottom:10px;letter-spacing:1px">選擇號碼</div>
+      <div style="display:flex;flex-wrap:wrap;gap:0">${numPicker}</div>
+    </div>
+    <div style="padding:16px 20px;border-bottom:1px solid var(--sep2);display:flex;align-items:center;gap:12px">
+      ${bl(qFr,44)}
+      <div>
+        <div style="font-size:17px;font-weight:800;color:var(--label)">號碼 ${String(qFr).padStart(2,'0')} 出現後，隔 ${selGap} 期</div>
+        <div style="font-size:13px;color:var(--label3)">最常跟著開出的號碼排行</div>
+      </div>
+    </div>
+    ${queryResult}
   </div>
 
   <div class="section-hdr">綜合轉移預測 TOP 10</div>
@@ -402,8 +449,175 @@ function renderMs(el,A){
 }
 
 function renderOe(el,A){
-  let mO=A.topOE[0][1],mB=A.topBS[0][1];
-  el.innerHTML=`<div class="section-hdr">奇偶（單雙）分布</div><div class="card"><div class="card-hd"><h3>🎲 奇偶比</h3></div><div class="card-bd">${A.topOE.map((e,i)=>`<div class="row"><span style="font-size:17px;font-weight:${i===0?800:600};color:${i===0?'var(--label)':'var(--label2)'};min-width:76px">${i===0?'▶ ':' '}${e[0]}</span>${br(e[1]/mO*100,i===0?'var(--purple)':'var(--bg3)',20)}<span style="font-size:16px;color:var(--label2);font-weight:700;min-width:80px;text-align:right">${e[1]} 次 (${(e[1]/allData.length*100).toFixed(0)}%)</span></div>`).join('')}</div></div><div class="section-hdr">大小比</div><div class="card"><div class="card-hd"><h3>📏 大小比例</h3><p>1–19 小號　20–39 大號</p></div><div class="card-bd">${A.topBS.map((e,i)=>`<div class="row"><span style="font-size:17px;font-weight:${i===0?800:600};color:${i===0?'var(--label)':'var(--label2)'};min-width:76px">${i===0?'▶ ':' '}${e[0]}</span>${br(e[1]/mB*100,i===0?'var(--teal)':'var(--bg3)',20)}<span style="font-size:16px;color:var(--label2);font-weight:700;min-width:80px;text-align:right">${e[1]} 次 (${(e[1]/allData.length*100).toFixed(0)}%)</span></div>`).join('')}</div></div>`;
+  const L=A.L;
+  const mO=A.topOE[0][1], mB=A.topBS[0][1];
+
+  /* ── 1. 歷史機率 ── */
+  const combos=['5單0雙','4單1雙','3單2雙','2單3雙','1單4雙','0單5雙'];
+  const histPct={};
+  combos.forEach(k=>{ histPct[k]=(A.oeM[k]||0)/L*100; });
+
+  /* ── 2. 近10期趨勢 ── */
+  const recent10=A.D.slice(0,10);
+  const recOE={};
+  recent10.forEach(r=>{
+    const od=r.n.filter(x=>x%2===1).length;
+    recOE[od+'單'+(5-od)+'雙']=(recOE[od+'單'+(5-od)+'雙']||0)+1;
+  });
+  const recTop=Object.entries(recOE).sort((a,b)=>b[1]-a[1]);
+
+  /* ── 3. 轉移尾數推薦池單雙比 ── */
+  const tailRk3=A.tailRk.slice(0,3);
+  let trPool=[];
+  tailRk3.forEach(t=>A.tailNums[t.tail].forEach(n=>{if(!trPool.includes(n))trPool.push(n);}));
+  const trOdd=trPool.filter(n=>n%2===1).length;
+  const trTotal=trPool.length||1;
+
+  /* ── 4. 綜合推薦號碼 TOP10 單雙分布 ── */
+  const top10=A.numRk.slice(0,10).map(r=>r.num);
+  const top10odd=top10.filter(n=>n%2===1).length;
+  // TOP10 期望單數 → 換算 5 球比例
+  const top10expOdd=top10odd/10*5;
+
+  /* ── 5. 鄰號分析建議池單雙比 ── */
+  const neiPool=Object.keys(A.neiSc).map(Number);
+  const neiTop10=neiPool.sort((a,b)=>(A.neiSc[b]||0)-(A.neiSc[a]||0)).slice(0,10);
+  const neiOdd=neiTop10.filter(n=>n%2===1).length;
+  const neiExpOdd=neiOdd/10*5;
+
+  /* ── 6. 遺漏值推薦池（遺漏最久 TOP10）單雙比 ── */
+  const missPool=Array.from({length:39},(_,i)=>i+1).sort((a,b)=>A.miss[b]-A.miss[a]).slice(0,10);
+  const missOdd=missPool.filter(n=>n%2===1).length;
+  const missExpOdd=missOdd/10*5;
+
+  /* ── 綜合評分（六維度）── */
+  const scores={};
+  combos.forEach(k=>{
+    const od=parseInt(k[0]);
+    // 維度1：歷史頻率 25%
+    const s1=histPct[k]*0.25;
+    // 維度2：近10期趨勢 20%
+    const s2=((recOE[k]||0)/10*100)*0.20;
+    // 維度3：轉移推薦池吻合 20%
+    const d3=Math.abs(od-trOdd/trTotal*5);
+    const s3=(d3===0?100:d3<=0.5?85:d3<=1?65:d3<=1.5?40:15)*0.20;
+    // 維度4：綜合推薦TOP10吻合 15%
+    const d4=Math.abs(od-top10expOdd);
+    const s4=(d4===0?100:d4<=0.5?85:d4<=1?65:d4<=1.5?40:15)*0.15;
+    // 維度5：鄰號池吻合 10%
+    const d5=Math.abs(od-neiExpOdd);
+    const s5=(d5===0?100:d5<=0.5?85:d5<=1?65:d5<=1.5?40:15)*0.10;
+    // 維度6：遺漏池吻合 10%
+    const d6=Math.abs(od-missExpOdd);
+    const s6=(d6===0?100:d6<=0.5?85:d6<=1?65:d6<=1.5?40:15)*0.10;
+    scores[k]=s1+s2+s3+s4+s5+s6;
+  });
+  const sortedCombos=combos.slice().sort((a,b)=>scores[b]-scores[a]);
+  const maxScore=scores[sortedCombos[0]];
+
+  /* ── 上期實際組合 ── */
+  const lastOdd=A.latest.filter(n=>n%2===1).length;
+  const lastCombo=lastOdd+'單'+(5-lastOdd)+'雙';
+
+  /* ── 各分析法的期望單數 ── */
+  const methods=[
+    {name:'轉移尾數', exp:(trOdd/trTotal*5), w:'20%'},
+    {name:'綜合推薦TOP10', exp:top10expOdd, w:'15%'},
+    {name:'鄰號分析', exp:neiExpOdd, w:'10%'},
+    {name:'遺漏追蹤', exp:missExpOdd, w:'10%'},
+  ];
+
+  /* ── render ── */
+  el.innerHTML=`
+  <div class="section-hdr">🔮 下一期單雙組合推薦</div>
+  <div class="card">
+    <div class="card-hd">
+      <h3>六維度綜合評分</h3>
+      <p>歷史25% ＋ 近10期20% ＋ 轉移20% ＋ 推薦TOP10吻合15% ＋ 鄰號10% ＋ 遺漏10%</p>
+    </div>
+    <div class="card-bd">
+      ${sortedCombos.map((k,i)=>{
+        const od=parseInt(k[0]);
+        const sc=scores[k];
+        const hist=histPct[k];
+        const rec=recOE[k]||0;
+        const isTop=i===0;
+        const isTop2=i<=1;
+        return`<div style="padding:14px 0;border-bottom:1px solid var(--sep2)">
+          <div class="row" style="margin-bottom:8px">
+            <span class="rank-num ${i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':''}">${i===0?'①':i===1?'②':i===2?'③':i+1}</span>
+            <span style="font-size:${isTop?'21px':'17px'};font-weight:${isTop?900:700};color:${isTop?'var(--label)':'var(--label2)'};min-width:80px">${k}</span>
+            ${br(sc/maxScore*100, isTop?'var(--orange)':isTop2?'var(--blue)':'var(--bg3)', isTop?22:16)}
+            <span style="font-size:${isTop?'18px':'15px'};font-weight:${isTop?800:600};color:${isTop?'var(--orange)':'var(--label3)'};min-width:44px;text-align:right">${sc.toFixed(1)}</span>
+          </div>
+          <div style="padding-left:38px;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:${isTop?'10px':'0'}">
+            <span class="stat-pill" style="font-size:12px;padding:4px 10px">歷史 ${hist.toFixed(0)}%</span>
+            <span class="stat-pill" style="font-size:12px;padding:4px 10px">近10期 ${rec}次</span>
+            ${isTop?`<span style="font-size:13px;font-weight:700;color:var(--green);background:rgba(52,199,89,.12);padding:4px 12px;border-radius:20px">✓ 推薦</span>`:''}
+          </div>
+          ${isTop?`<div style="padding-left:38px;margin-top:8px">
+            <div style="font-size:12px;color:var(--label3);margin-bottom:6px;font-weight:700">各分析法期望單數（越接近 ${od} 分越高）</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              ${methods.map(m=>{
+                const diff=Math.abs(od-m.exp);
+                const match=diff<=0.5;
+                return`<div style="background:${match?'rgba(52,199,89,.1)':'var(--bg)'};border:1px solid ${match?'rgba(52,199,89,.3)':'var(--sep2)'};border-radius:10px;padding:6px 10px;text-align:center">
+                  <div style="font-size:11px;color:var(--label3)">${m.name}</div>
+                  <div style="font-size:15px;font-weight:800;color:${match?'var(--green)':'var(--label2)'};margin-top:2px">${m.exp.toFixed(1)}單</div>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>`:''}
+        </div>`;
+      }).join('')}
+    </div>
+  </div>
+
+  <div class="section-hdr">奇偶（單雙）歷史分布</div>
+  <div class="card">
+    <div class="card-hd"><h3>🎲 歷史奇偶比</h3><p>近 ${L} 期各組合出現次數</p></div>
+    <div class="card-bd">
+      ${A.topOE.map((e,i)=>{
+        const isLast=e[0]===lastCombo;
+        return`<div class="row">
+          <span style="font-size:16px;font-weight:${i===0?800:600};color:${i===0?'var(--label)':'var(--label2)'};min-width:76px">${i===0?'▶ ':' '}${e[0]}</span>
+          ${br(e[1]/mO*100,i===0?'var(--purple)':'var(--bg3)',18)}
+          <span style="font-size:15px;color:var(--label2);font-weight:700;min-width:90px;text-align:right">${e[1]}次 (${(e[1]/L*100).toFixed(0)}%)</span>
+          ${isLast?'<span style="font-size:12px;background:rgba(0,122,255,.12);color:var(--blue);padding:3px 8px;border-radius:10px;font-weight:700;white-space:nowrap">上期</span>':''}
+        </div>`;
+      }).join('')}
+    </div>
+  </div>
+
+  <div class="section-hdr">近10期趨勢</div>
+  <div class="card">
+    <div class="card-hd"><h3>📈 近期單雙走勢</h3></div>
+    <div class="card-bd">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+        ${recent10.map(r=>{
+          const od=r.n.filter(x=>x%2===1).length;
+          const c=od>=3?'var(--orange)':'var(--blue)';
+          return`<div style="text-align:center;background:var(--bg);border-radius:10px;padding:8px 10px;border:1px solid var(--sep2)">
+            <div style="font-size:11px;color:var(--label3)">${r.d.slice(5)}</div>
+            <div style="font-size:15px;font-weight:800;color:${c};margin-top:2px">${od}單${5-od}雙</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="font-size:14px;color:var(--label2)">近10期最常見：<span style="font-weight:800;color:var(--label)">${recTop[0][0]}</span>（${recTop[0][1]}次）${recTop[1]?`、<span style="font-weight:800;color:var(--label)">${recTop[1][0]}</span>（${recTop[1][1]}次）`:''}</div>
+    </div>
+  </div>
+
+  <div class="section-hdr">大小比歷史分布</div>
+  <div class="card">
+    <div class="card-hd"><h3>📏 大小比例</h3><p>1–19 小號　20–39 大號</p></div>
+    <div class="card-bd">
+      ${A.topBS.map((e,i)=>`<div class="row">
+        <span style="font-size:16px;font-weight:${i===0?800:600};color:${i===0?'var(--label)':'var(--label2)'};min-width:76px">${i===0?'▶ ':' '}${e[0]}</span>
+        ${br(e[1]/mB*100,i===0?'var(--teal)':'var(--bg3)',18)}
+        <span style="font-size:15px;color:var(--label2);font-weight:700;min-width:80px;text-align:right">${e[1]}次 (${(e[1]/L*100).toFixed(0)}%)</span>
+      </div>`).join('')}
+    </div>
+  </div>`;
 }
 
 
