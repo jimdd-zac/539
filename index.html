@@ -3,112 +3,128 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>539 超級分析系統</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<title>539 分析系統</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg1:#080818; --bg2:#0e1a36; --bg3:#1a0e2e; --bg4:#0d1117;
-  --gold:#fbbf24; --red:#ef4444; --orange:#f97316; --green:#22c55e;
-  --blue:#3b82f6; --purple:#8b5cf6; --pink:#ec4899; --cyan:#06b6d4;
-  --teal:#14b8a6; --rose:#f43f5e; --yellow:#eab308;
-  --t1:#94a3b8; --t2:#64748b; --t3:#475569; --t4:#334155;
+  --bg:#f2f2f7;--bg2:#ffffff;--bg3:#e5e5ea;--bg4:#f2f2f7;
+  --sep:rgba(60,60,67,0.18);--sep2:rgba(60,60,67,0.08);
+  --label:#000000;--label2:rgba(60,60,67,0.72);--label3:rgba(60,60,67,0.48);--label4:rgba(60,60,67,0.26);
+  --blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;
+  --yellow:#ffcc00;--purple:#af52de;--teal:#5ac8fa;--indigo:#5856d6;
 }
-* { box-sizing:border-box; margin:0; padding:0; }
-body {
-  min-height:100vh;
-  background:linear-gradient(160deg,var(--bg1) 0%,var(--bg2) 40%,var(--bg3) 70%,var(--bg4) 100%);
-  color:#e2e8f0;
-  font-family:'Noto Sans TC','Segoe UI',sans-serif;
-  padding:12px 14px;
-  max-width:720px; margin:0 auto;
-}
-::-webkit-scrollbar{width:5px;height:5px}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px}
-input:focus{outline:2px solid var(--gold)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{font-size:17px}
+body{background:var(--bg);color:var(--label);font-family:'Noto Sans TC',-apple-system,'Helvetica Neue',sans-serif;padding:0 0 60px;min-height:100vh;-webkit-font-smoothing:antialiased}
+.hdr-zone{background:rgba(255,255,255,0.88);border-bottom:1px solid var(--sep2);padding:52px 20px 22px;text-align:center;position:sticky;top:0;z-index:100;backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px)}
+.hdr-eyebrow{font-size:13px;font-weight:700;letter-spacing:2px;color:var(--blue);text-transform:uppercase;margin-bottom:5px}
+h1.hdr{font-size:clamp(26px,6.5vw,38px);font-weight:900;letter-spacing:-1px;color:var(--label);line-height:1.1;margin-bottom:5px}
+.hdr-sub{font-size:14px;color:var(--label3);font-weight:500}
+.latest-card{margin:16px 16px 0;background:var(--blue);border-radius:22px;padding:20px 22px 18px;box-shadow:0 8px 24px rgba(0,122,255,0.30);color:#fff}
+.latest-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.latest-title{font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:.75}
+.latest-date{font-size:14px;font-weight:700;opacity:.9}
+.latest-balls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.tail-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tail-label{font-size:13px;opacity:.7;font-weight:600}
+.tab-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:14px 16px 0;scrollbar-width:none}
+.tab-scroll::-webkit-scrollbar{display:none}
+.tab-bar{display:flex;gap:8px;width:max-content;padding-bottom:14px}
+.tab-bar button{height:40px;padding:0 18px;border-radius:20px;border:none;background:var(--bg2);color:var(--label2);font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:'Noto Sans TC',-apple-system,sans-serif;box-shadow:0 1px 3px rgba(0,0,0,.10);transition:all .18s ease}
+.tab-bar button:active{transform:scale(.96)}
+.tab-bar button.on{background:var(--blue);color:#fff;box-shadow:0 4px 12px rgba(0,122,255,.35)}
+.section-hdr{padding:22px 20px 8px;font-size:13px;font-weight:700;color:var(--label3);text-transform:uppercase;letter-spacing:1.5px}
+.card{margin:0 16px 14px;background:var(--bg2);border-radius:20px;box-shadow:0 1px 3px rgba(0,0,0,.10);overflow:hidden}
+.card-hd{padding:18px 20px 14px;border-bottom:1px solid var(--sep2)}
+.card-hd h3{font-size:19px;font-weight:800;color:var(--label);letter-spacing:-.3px}
+.card-hd p{font-size:14px;color:var(--label3);margin-top:4px;line-height:1.4}
+.card-bd{padding:16px 20px}
+.ball{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0;font-weight:800;font-family:'Noto Sans TC',-apple-system,sans-serif;letter-spacing:-.5px}
+.bar-track{background:var(--bg3);border-radius:999px;overflow:hidden;flex:1}
+.bar-fill{height:100%;border-radius:999px;transition:width .5s cubic-bezier(.34,1.56,.64,1)}
+.row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.row:last-child{margin-bottom:0}
+.rank-num{width:28px;font-size:15px;font-weight:800;text-align:right;flex-shrink:0;color:var(--label3)}
+.rank-1{color:#b8860b!important}.rank-2{color:#636366!important}.rank-3{color:#7d5a3c!important}
+.medal-grid{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
+.medal-card{flex:1;min-width:90px;max-width:120px;background:var(--bg);border-radius:18px;padding:20px 12px 14px;text-align:center;position:relative;box-shadow:0 1px 3px rgba(0,0,0,.10)}
+.medal-badge{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;letter-spacing:1px;white-space:nowrap;color:#fff}
+.pool-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.pool-group{flex:1;min-width:130px;background:var(--bg);border-radius:14px;padding:12px 14px}
+.pool-label{font-size:14px;font-weight:700;margin-bottom:8px}
+.pool-balls{display:flex;gap:5px;flex-wrap:wrap}
+.tbl-wrap{border-radius:14px;overflow:hidden;border:1px solid var(--sep2)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th{padding:11px 10px;text-align:center;color:var(--label3);font-size:13px;font-weight:700;background:var(--bg4);border-bottom:1px solid var(--sep2);letter-spacing:.5px}
+td{padding:13px 10px;text-align:center;border-bottom:1px solid var(--sep2);font-size:16px;font-weight:600}
+tr:last-child td{border-bottom:none}
+tr.hl{background:rgba(255,204,0,.10)}
+tr.hl td{font-weight:900;font-size:17px}
+.inp{background:var(--bg);border:1.5px solid var(--sep);border-radius:12px;padding:13px 16px;color:var(--label);font-size:17px;font-family:'Noto Sans TC',-apple-system,sans-serif;transition:border-color .15s,box-shadow .15s;-webkit-appearance:none}
+.inp:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 4px rgba(0,122,255,.15)}
+.inp-num{width:58px;border-radius:14px;padding:14px 0;font-size:20px;font-weight:800;text-align:center}
+.btn-primary{display:block;width:100%;max-width:320px;margin:0 auto;background:var(--blue);border:none;border-radius:14px;padding:16px;color:#fff;font-size:17px;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',-apple-system,sans-serif;transition:all .15s;box-shadow:0 4px 16px rgba(0,122,255,.28);letter-spacing:.3px}
+.btn-primary:active{transform:scale(.97);opacity:.9}
+.btn-green{background:var(--green);box-shadow:0 4px 16px rgba(52,199,89,.28)}
+.btn-tab-add{background:var(--green);border:none;border-radius:14px;padding:15px 32px;color:#fff;font-size:17px;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',-apple-system,sans-serif;box-shadow:0 4px 16px rgba(52,199,89,.28);transition:all .15s}
+.btn-tab-add:active{transform:scale(.97)}
+.btn-gap{padding:9px 18px;border-radius:20px;border:1.5px solid var(--sep);background:var(--bg2);color:var(--label2);cursor:pointer;font-weight:700;font-size:15px;font-family:'Noto Sans TC',-apple-system,sans-serif;transition:all .15s}
+.btn-gap.on{border-color:var(--orange);background:rgba(255,149,0,.12);color:var(--orange)}
+.btn-reset{background:var(--bg3);border:none;border-radius:12px;padding:13px 26px;color:var(--label2);font-size:15px;font-weight:600;cursor:pointer;font-family:'Noto Sans TC',-apple-system,sans-serif;transition:all .15s}
+.btn-del{background:rgba(255,59,48,.10);border:none;border-radius:10px;padding:8px 16px;color:var(--red);font-size:15px;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',-apple-system,sans-serif;flex-shrink:0}
 
-h1.hdr{font-family:'Rajdhani','Orbitron',monospace;font-size:clamp(18px,5vw,28px);font-weight:700;
-  background:linear-gradient(90deg,var(--gold),var(--orange),var(--red),var(--pink));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:3px;text-align:center}
-.sub{color:var(--t3);font-size:11px;text-align:center;font-family:'Rajdhani',sans-serif;letter-spacing:1px;margin-top:2px}
+/* ── FETCH BUTTON ── */
 
-.latest-bar{display:flex;gap:5px;flex-wrap:wrap;align-items:center;justify-content:center;
-  margin:10px 0;padding:7px 10px;background:rgba(255,255,255,.025);border-radius:10px;border:1px solid rgba(255,255,255,.05)}
-.latest-bar span.lbl{font-size:10px;color:var(--t3);font-family:'Rajdhani'}
+.msg{margin-top:10px;padding:14px 16px;border-radius:12px;font-size:16px;font-weight:600;line-height:1.4}
+.msg.ok{background:rgba(52,199,89,.12);color:#1a6e33}
+.msg.err{background:rgba(255,59,48,.10);color:#c0281e}
+.msg.info{background:rgba(0,122,255,.10);color:#0051a8}
 
-.tabs{display:flex;gap:3px;margin-bottom:14px;flex-wrap:wrap;justify-content:center}
-.tabs button{padding:6px 10px;border-radius:8px;border:none;color:var(--t2);cursor:pointer;font-weight:600;font-size:11px;
-  background:rgba(255,255,255,.03);transition:all .15s}
-.tabs button.on{color:#fff}
 
-.box{background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.07);border-radius:14px;margin-bottom:14px;overflow:hidden}
-.box-hd{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.06)}
-.box-hd h3{font-size:14px;font-weight:700}
-.box-hd p{font-size:11px;color:var(--t2);margin-top:2px}
-.box-bd{padding:14px}
-
-.ball{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0;
-  font-family:'Orbitron',monospace;font-weight:800}
-.bar-wrap{background:rgba(255,255,255,.06);border-radius:6px;overflow:hidden;flex:1}
-.bar-fill{height:100%;border-radius:6px;transition:width .3s}
-
-.row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
-.medal-card{text-align:center;position:relative;border-radius:14px;padding:16px 0 10px}
-.medal-badge{position:absolute;top:-9px;left:50%;transform:translateX(-50%);color:#000;font-weight:900;font-size:9px;padding:2px 8px;border-radius:8px}
-
-table{width:100%;border-collapse:collapse;font-size:12px}
-th{padding:8px 6px;text-align:center;color:var(--t2);font-size:10px}
-td{padding:8px 6px;text-align:center}
-tr.hl{background:rgba(251,191,36,.06);border-top:2px solid rgba(251,191,36,.15)}
-
-.accent-box{border-radius:16px;padding:18px;margin-bottom:14px}
-.pool-group{background:rgba(251,191,36,.08);border-radius:8px;padding:6px 10px;border:1px solid rgba(251,191,36,.15)}
-.pool-group.even{background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.15)}
-
-.inp{background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:9px 12px;color:#fff;font-size:15px;font-family:'Orbitron',monospace}
-.inp-num{width:52px;border-radius:12px;padding:10px 0;font-size:20px;text-align:center}
-.btn-add{background:linear-gradient(90deg,var(--green),#16a34a);border:none;border-radius:12px;padding:11px 0;color:#fff;font-size:14px;font-weight:700;cursor:pointer;width:100%;max-width:300px}
-.btn-tab-add{background:linear-gradient(90deg,var(--green),#16a34a);border:none;border-radius:12px;padding:11px 28px;color:#fff;font-size:14px;font-weight:700;cursor:pointer}
-.btn-reset{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:7px 18px;color:var(--t2);font-size:11px;cursor:pointer}
-.btn-del{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:3px 10px;color:var(--red);font-size:10px;cursor:pointer}
-.btn-gap{padding:5px 14px;border-radius:16px;border:2px solid rgba(255,255,255,.08);background:transparent;color:var(--t2);cursor:pointer;font-weight:700;font-size:12px}
-.btn-gap.on{border-color:var(--orange);background:rgba(249,115,22,.12);color:var(--orange)}
-
-.msg{margin-top:8px;padding:8px 12px;border-radius:10px;font-size:12px;font-weight:600}
-.msg.ok{background:rgba(34,197,94,.12);color:var(--green)}
-.msg.err{background:rgba(239,68,68,.12);color:var(--red)}
-.msg.info{background:rgba(251,191,36,.12);color:var(--gold)}
-
+.num-chip{border-radius:8px;padding:4px 10px;font-weight:800;font-size:15px}
+.stat-pill{display:inline-flex;align-items:center;gap:6px;background:var(--bg2);border-radius:20px;padding:8px 16px;font-size:14px;color:var(--label2);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.10)}
+.stat-val{color:var(--label);font-weight:900;font-size:16px}
 .tab-content{display:none}
-.tab-content.active{display:block}
-.footer{text-align:center;padding:14px 0 4px;font-size:9px;color:#1e293b;line-height:1.6}
-
-.expand-row{margin-bottom:5px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
-.num-chip{border-radius:6px;padding:2px 7px;font-weight:700;font-family:'Orbitron',monospace;font-size:12px}
-.tag{display:inline-block;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700}
+.tab-content.active{display:block;animation:fadeUp .22s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.list-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 20px;border-bottom:1px solid var(--sep2);flex-wrap:wrap}
+.list-row:last-child{border-bottom:none}
+.footer{text-align:center;padding:28px 20px 12px;font-size:13px;color:var(--label4);line-height:1.6}
+.field-label{font-size:13px;font-weight:700;color:var(--label3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;display:block}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:4px}
 </style>
 </head>
 <body>
 
-<h1 class="hdr">539 SUPER ANALYZER</h1>
-<p class="sub" id="headerSub"></p>
-<div class="latest-bar" id="latestBar"></div>
-<div class="tabs" id="tabBar"></div>
+<div class="hdr-zone">
+  <div class="hdr-eyebrow">今彩 539</div>
+  <h1 class="hdr">超級分析系統</h1>
+  <div class="hdr-sub" id="headerSub">載入中…</div>
+</div>
+
+<div class="latest-card" id="latestBar"></div>
+
+<div class="tab-scroll">
+  <div class="tab-bar" id="tabBar"></div>
+</div>
 
 <div id="tab-recommend" class="tab-content active"></div>
-<div id="tab-trans" class="tab-content"></div>
-<div id="tab-nei" class="tab-content"></div>
-<div id="tab-freq" class="tab-content"></div>
-<div id="tab-rep" class="tab-content"></div>
-<div id="tab-miss" class="tab-content"></div>
-<div id="tab-oe" class="tab-content"></div>
-<div id="tab-add" class="tab-content"></div>
+<div id="tab-trans"     class="tab-content"></div>
+<div id="tab-nei"       class="tab-content"></div>
+<div id="tab-freq"      class="tab-content"></div>
+<div id="tab-rep"       class="tab-content"></div>
+<div id="tab-miss"      class="tab-content"></div>
+<div id="tab-oe"        class="tab-content"></div>
+<div id="tab-add"       class="tab-content"></div>
 
-<div class="footer">⚠️ 僅供娛樂參考，樂透為隨機事件，請理性投注。未滿18歲不得購買彩券。</div>
+<div class="footer">⚠️ 僅供娛樂參考，樂透為隨機事件，請理性投注。<br>未滿18歲不得購買彩券。</div>
 
 <script>
 /* ═══ DATA ═══ */
 const INIT_DATA=[
-{d:"2026/03/20",n:[3,11,15,33,39]},{d:"2026/03/19",n:[5,23,25,30,37]},
+{d:"2026/03/21",n:[7,14,15,19,22]},{d:"2026/03/20",n:[3,11,15,33,39]},{d:"2026/03/19",n:[5,23,25,30,37]},
 {d:"2026/03/18",n:[21,22,31,32,35]},{d:"2026/03/17",n:[11,13,19,22,27]},
 {d:"2026/03/16",n:[17,19,21,29,34]},{d:"2026/03/14",n:[8,10,18,20,34]},
 {d:"2026/03/13",n:[2,5,11,12,15]},{d:"2026/03/12",n:[4,5,7,23,35]},
@@ -160,304 +176,286 @@ const INIT_DATA=[
 {d:"2025/11/29",n:[8,27,30,33,36]},{d:"2025/11/28",n:[8,13,14,22,28]},
 ];
 
-const CL=["#ef4444","#f97316","#eab308","#22c55e","#06b6d4","#3b82f6","#8b5cf6","#ec4899","#14b8a6","#f43f5e"];
-const TX=["#fff","#fff","#111","#fff","#fff","#fff","#fff","#fff","#fff","#fff"];
+const CL=["#ff3b30","#ff9500","#cc9900","#34c759","#0a84ff","#007aff","#af52de","#ff2d55","#00c7be","#ff6b00"];
 const MEDALS=["🥇","🥈","🥉"];
-const MCOL=["#fbbf24","#94a3b8","#cd7f32"];
+const MCOLS=["#b8860b","#636366","#7d5a3c"];
 
-let allData=[], curTab="recommend", selGap=1;
-
-/* ═══ HELPERS ═══ */
+let allData=[],curTab="recommend",selGap=1;
 function comb(n,r){if(r>n)return 0;let res=1;for(let i=0;i<r;i++)res=res*(n-i)/(i+1);return Math.round(res);}
-function ball(v,sz,tail){sz=sz||26;let t=tail?v:v%10;let bg=tail?CL[t]:CL[t]+"28";let bd=tail?"none":"1.5px solid "+CL[t];let cl=tail?TX[t]:"#fff";
-return `<span class="ball" style="width:${sz}px;height:${sz}px;font-size:${sz*.42}px;background:${bg};border:${bd};color:${cl}">${tail?v:String(v).padStart(2,"0")}</span>`;}
-function bar(pct,color,h){h=h||14;return `<div class="bar-wrap" style="height:${h}px"><div class="bar-fill" style="width:${Math.min(pct,100)}%;background:${color||"#fbbf24"};height:100%"></div></div>`;}
+function bl(v,sz,filled){sz=sz||36;let t=v%10;if(filled)return`<span class="ball" style="width:${sz}px;height:${sz}px;font-size:${sz*.44}px;background:${CL[t]};color:#fff;box-shadow:0 2px 6px ${CL[t]}55">${v}</span>`;return`<span class="ball" style="width:${sz}px;height:${sz}px;font-size:${sz*.38}px;background:${CL[t]}18;color:${CL[t]};border:2.5px solid ${CL[t]}90">${String(v).padStart(2,'0')}</span>`;}
+function blW(v,sz){sz=sz||38;return`<span class="ball" style="width:${sz}px;height:${sz}px;font-size:${sz*.4}px;background:rgba(255,255,255,0.22);color:#fff;border:2px solid rgba(255,255,255,0.55)">${String(v).padStart(2,'0')}</span>`;}
+function blWT(v,sz){sz=sz||34;let t=v%10;return`<span class="ball" style="width:${sz}px;height:${sz}px;font-size:${sz*.44}px;background:rgba(255,255,255,0.92);color:${CL[t]};font-weight:900">${v}</span>`;}
+function br(p,c,h){h=h||16;return`<div class="bar-track" style="height:${h}px"><div class="bar-fill" style="width:${Math.min(p,100)}%;background:${c};height:100%"></div></div>`;}
+function loadData(){try{let s=localStorage.getItem("l539v5");if(s){let d=JSON.parse(s);if(Array.isArray(d)&&d.length>0)return d;}}catch(e){}return null;}
+function saveData(){try{localStorage.setItem("l539v5",JSON.stringify(allData));}catch(e){}}
 
-/* ═══ STORAGE ═══ */
-function loadData(){try{let s=localStorage.getItem("lotto539-html-v1");if(s){let d=JSON.parse(s);if(Array.isArray(d)&&d.length>0)return d;}}catch(e){}return null;}
-function saveData(){try{localStorage.setItem("lotto539-html-v1",JSON.stringify(allData));}catch(e){}}
+
 
 /* ═══ ANALYSIS ═══ */
 function analyze(){
   let D=allData,L=D.length;
   let tails=D.map(r=>[...new Set(r.n.map(x=>x%10))]);
-  let latest=D[0].n, latT=tails[0];
-
+  let latest=D[0].n,latT=tails[0];
   let cnt=new Array(40).fill(0);D.forEach(r=>r.n.forEach(x=>cnt[x]++));
   let r10=new Array(40).fill(0);D.slice(0,10).forEach(r=>r.n.forEach(x=>r10[x]++));
   let stk=new Array(40).fill(0);for(let n=1;n<=39;n++){for(let i=0;i<L;i++){if(D[i].n.includes(n))stk[n]++;else break;}}
   let miss=new Array(40).fill(L);for(let n=1;n<=39;n++){for(let i=0;i<L;i++){if(D[i].n.includes(n)){miss[n]=i;break;}}}
-
   let tCnt=new Array(10).fill(0);D.forEach(r=>r.n.forEach(x=>tCnt[x%10]++));
   let tR10=new Array(10).fill(0);D.slice(0,10).forEach(r=>r.n.forEach(x=>tR10[x%10]++));
   let tStk=new Array(10).fill(0);for(let t=0;t<10;t++){for(let i=0;i<L;i++){if(D[i].n.some(x=>x%10===t))tStk[t]++;else break;}}
   let tMiss=new Array(10).fill(L);for(let t=0;t<10;t++){for(let i=0;i<L;i++){if(D[i].n.some(x=>x%10===t)){tMiss[t]=i;break;}}}
-
   let MG=5,tr={},trT={};
   for(let g=1;g<=MG;g++){tr[g]=[];for(let k=0;k<10;k++)tr[g].push(new Array(10).fill(0));trT[g]=new Array(10).fill(0);}
   for(let i=0;i<L;i++){for(let g=1;g<=MG;g++){if(i-g>=0){tails[i].forEach(fr=>{tails[i-g].forEach(to=>{tr[g][fr][to]++;});trT[g][fr]++;})}}}
-  let nF={};
-  for(let g=1;g<=MG;g++){nF[g]=[];for(let k=0;k<10;k++)nF[g].push({});for(let i=g;i<L;i++){tails[i].forEach(fr=>{D[i-g].n.forEach(nm=>{nF[g][fr][nm]=(nF[g][fr][nm]||0)+1;});});}}
+  let nF={};for(let g=1;g<=MG;g++){nF[g]=[];for(let k=0;k<10;k++)nF[g].push({});for(let i=g;i<L;i++){tails[i].forEach(fr=>{D[i-g].n.forEach(nm=>{nF[g][fr][nm]=(nF[g][fr][nm]||0)+1;});});}}
   let gw={1:.4,2:.28,3:.17,4:.09,5:.06};
-  let trNum={};
-  for(let g=1;g<=MG;g++){latT.forEach(fr=>{let tot=trT[g][fr]||1;Object.keys(nF[g][fr]).forEach(nm=>{trNum[+nm]=(trNum[+nm]||0)+(nF[g][fr][nm]/tot)*gw[g];});});}
-  let trTail=new Array(10).fill(0);
-  for(let g=1;g<=MG;g++){latT.forEach(fr=>{let tot=trT[g][fr]||1;for(let to=0;to<10;to++)trTail[to]+=(tr[g][fr][to]/tot)*gw[g];});}
+  let trNum={};for(let g=1;g<=MG;g++){latT.forEach(fr=>{let tot=trT[g][fr]||1;Object.keys(nF[g][fr]).forEach(nm=>{trNum[+nm]=(trNum[+nm]||0)+(nF[g][fr][nm]/tot)*gw[g];});});}
+  let trTail=new Array(10).fill(0);for(let g=1;g<=MG;g++){latT.forEach(fr=>{let tot=trT[g][fr]||1;for(let to=0;to<10;to++)trTail[to]+=(tr[g][fr][to]/tot)*gw[g];});}
   let ttMx=Math.max(...trTail);let trTailN=trTail.map(s=>ttMx>0?s/ttMx*100:0);
-
   let neiHit={},neiTotal=0,neiHits=0;
   for(let i=1;i<L;i++){D[i].n.forEach(x=>{[-2,-1,1,2].forEach(dd=>{let nb=x+dd;if(nb>=1&&nb<=39){neiTotal++;if(D[i-1].n.includes(nb)){neiHits++;neiHit[nb]=(neiHit[nb]||0)+1;}}});});}
   let neiRate=neiTotal>0?neiHits/neiTotal:0;
   let neiSc={};latest.forEach(x=>{[-2,-1,1,2].forEach(dd=>{let nb=x+dd;if(nb>=1&&nb<=39){let w=Math.abs(dd)===1?1.5:1;neiSc[nb]=(neiSc[nb]||0)+w*(1+(neiHit[nb]||0)/(L*.05));}});});
   let neiTN=new Array(10).fill(0);latest.forEach(x=>{[-2,-1,1,2].forEach(dd=>{let nb=x+dd;if(nb>=1&&nb<=39)neiTN[nb%10]+=(Math.abs(dd)===1?1.5:1);});});
   let ntMx=Math.max(...neiTN);let neiTNorm=neiTN.map(s=>ntMx>0?s/ntMx*100:0);
-
   let repN={},repT=0,repH=0;
   for(let i=1;i<L;i++){D[i].n.forEach(x=>{repT++;if(D[i-1].n.includes(x)){repH++;repN[x]=(repN[x]||0)+1;}});}
   let repRate=repT>0?repH/repT:0;
   let repSc={};latest.forEach(x=>{repSc[x]=(repN[x]||0)+1;});if(D.length>1)D[1].n.forEach(x=>{repSc[x]=(repSc[x]||0)+(repN[x]||0)*.3;});
   let repTN=new Array(10).fill(0);latest.forEach(x=>{repTN[x%10]+=20;});if(D.length>1)D[1].n.forEach(x=>{repTN[x%10]+=6;});
   let rtMx=Math.max(...repTN);let repTNorm=repTN.map(s=>rtMx>0?s/rtMx*100:0);
-
-  let oeM={},bsM={};
-  D.forEach(r=>{let od=r.n.filter(x=>x%2===1).length;let bg=r.n.filter(x=>x>=20).length;
-    oeM[od+"單"+(5-od)+"雙"]=(oeM[od+"單"+(5-od)+"雙"]||0)+1;bsM[(5-bg)+"小"+bg+"大"]=(bsM[(5-bg)+"小"+bg+"大"]||0)+1;});
-  let topOE=Object.entries(oeM).sort((a,b)=>b[1]-a[1]);
-  let topBS=Object.entries(bsM).sort((a,b)=>b[1]-a[1]);
-
-  let freqN=new Array(10).fill(0);
-  for(let t=0;t<10;t++)freqN[t]=(tCnt[t]/(L*5)/.1)*30+(tR10[t]/50/.1)*40+(tStk[t]>=3?30:tStk[t]>=2?20:tStk[t]>=1?10:0);
+  let oeM={},bsM={};D.forEach(r=>{let od=r.n.filter(x=>x%2===1).length;let bg=r.n.filter(x=>x>=20).length;oeM[od+"單"+(5-od)+"雙"]=(oeM[od+"單"+(5-od)+"雙"]||0)+1;bsM[(5-bg)+"小"+bg+"大"]=(bsM[(5-bg)+"小"+bg+"大"]||0)+1;});
+  let topOE=Object.entries(oeM).sort((a,b)=>b[1]-a[1]);let topBS=Object.entries(bsM).sort((a,b)=>b[1]-a[1]);
+  let freqN=new Array(10).fill(0);for(let t=0;t<10;t++)freqN[t]=(tCnt[t]/(L*5)/.1)*30+(tR10[t]/50/.1)*40+(tStk[t]>=3?30:tStk[t]>=2?20:tStk[t]>=1?10:0);
   let fMx=Math.max(...freqN);let freqNorm=freqN.map(s=>fMx>0?s/fMx*100:0);
   let missN=tMiss.map(m=>m===0?100:m===1?80:m===2?60:m<=4?40:m<=7?20:5);
-
   let W={tr:.28,nei:.22,fq:.18,rp:.17,ms:.10,oe:.05};
-  let tailFinal=new Array(10).fill(0);
-  for(let t=0;t<10;t++)tailFinal[t]=trTailN[t]*W.tr+neiTNorm[t]*W.nei+freqNorm[t]*W.fq+repTNorm[t]*W.rp+missN[t]*W.ms+50*W.oe;
-  let tailRk=tailFinal.map((s,i)=>({tail:i,score:s,tr:trTailN[i],nei:neiTNorm[i],fq:freqNorm[i],rp:repTNorm[i],ms:missN[i],cnt:tCnt[i],r10:tR10[i],stk:tStk[i],gap:tMiss[i]})).sort((a,b)=>b.score-a.score);
-
-  let numFinal={};
-  for(let n=1;n<=39;n++){
-    let tS=(trNum[n]||0)*100*W.tr;
-    let fS=((cnt[n]/(L*5)*39)*30+(r10[n]/10*39)*40+(stk[n]>=3?30:stk[n]>=2?20:stk[n]>=1?10:0))*W.fq;
-    let nS=(neiSc[n]||0)*15*W.nei;let rS=(repSc[n]||0)*20*W.rp;
-    let mS=(miss[n]===0?100:miss[n]===1?80:miss[n]===2?60:miss[n]<=4?40:miss[n]<=7?20:5)*W.ms;
-    numFinal[n]={total:tS+fS+nS+rS+mS+50*W.oe,tS,fS,nS,rS,mS};}
+  let tailFinal=new Array(10).fill(0);for(let t=0;t<10;t++)tailFinal[t]=trTailN[t]*W.tr+neiTNorm[t]*W.nei+freqNorm[t]*W.fq+repTNorm[t]*W.rp+missN[t]*W.ms+50*W.oe;
+  let tailRk=tailFinal.map((s,i)=>({tail:i,score:s,cnt:tCnt[i],r10:tR10[i],stk:tStk[i],gap:tMiss[i]})).sort((a,b)=>b.score-a.score);
+  let numFinal={};for(let n=1;n<=39;n++){let tS=(trNum[n]||0)*100*W.tr;let fS=((cnt[n]/(L*5)*39)*30+(r10[n]/10*39)*40+(stk[n]>=3?30:stk[n]>=2?20:stk[n]>=1?10:0))*W.fq;let nS=(neiSc[n]||0)*15*W.nei;let rS=(repSc[n]||0)*20*W.rp;let mS=(miss[n]===0?100:miss[n]===1?80:miss[n]===2?60:miss[n]<=4?40:miss[n]<=7?20:5)*W.ms;numFinal[n]={total:tS+fS+nS+rS+mS+50*W.oe};}
   let numRk=Object.keys(numFinal).map(k=>({num:+k,score:numFinal[+k].total})).sort((a,b)=>b.score-a.score);
-
   let tailNums=[];for(let t=0;t<10;t++){let a=[];for(let n=1;n<=39;n++)if(n%10===t)a.push(n);tailNums.push(a);}
   if(!tailNums[0].length)tailNums[0]=[10,20,30];
-
-  return {D,L,latest,latT,tails,cnt,r10,stk,miss,tCnt,tStk,tMiss,tR10,tr,trT,nF,trNum,neiSc,neiRate,neiHit,repN,repRate,repSc,topOE,topBS,tailRk,numRk,numFinal,tailNums,oeM};
+  return{D,L,latest,latT,tails,cnt,r10,stk,miss,tCnt,tStk,tMiss,tR10,tr,trT,nF,trNum,neiSc,neiRate,neiHit,repN,repRate,repSc,topOE,topBS,tailRk,numRk,tailNums,oeM};
 }
 
-/* ═══ RENDER FUNCTIONS ═══ */
-function switchTab(k){
-  curTab=k;
-  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
-  document.getElementById('tab-'+k).classList.add('active');
-  document.querySelectorAll('.tabs button').forEach(btn=>{btn.classList.toggle('on',btn.dataset.tab===k);});
-  renderTab(k);
-}
+/* ═══ RENDER ═══ */
+function switchTab(k){curTab=k;document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));document.getElementById('tab-'+k).classList.add('active');document.querySelectorAll('.tab-bar button').forEach(btn=>btn.classList.toggle('on',btn.dataset.tab===k));renderTab(k);}
 
 function renderAll(){
   let A=analyze();
   let added=allData.filter(r=>!INIT_DATA.some(ir=>ir.d===r.d));
-  document.getElementById('headerSub').textContent=allData.length+' DRAWS ｜ LATEST '+allData[0].d+(added.length?' +'+added.length:'');
-  let lb=document.getElementById('latestBar');
-  lb.innerHTML='<span class="lbl">LATEST</span>'+allData[0].n.map(x=>ball(x,28)).join('')+'<span style="font-size:10px;color:#475569">→</span>'+A.latT.slice().sort((a,b)=>a-b).map(t=>ball(t,28,true)).join('');
-
-  let tabs=[{k:"recommend",l:"🎯 推薦",c:"#fbbf24"},{k:"trans",l:"🔄 轉移",c:"#f97316"},{k:"nei",l:"👥 鄰號",c:"#3b82f6"},{k:"freq",l:"📊 頻率",c:"#22c55e"},{k:"rep",l:"🔁 重複",c:"#ec4899"},{k:"miss",l:"❄️ 遺漏",c:"#06b6d4"},{k:"oe",l:"🎲 奇偶",c:"#8b5cf6"},{k:"add",l:"➕ 新增",c:"#22c55e"}];
-  document.getElementById('tabBar').innerHTML=tabs.map(t=>`<button data-tab="${t.k}" class="${curTab===t.k?'on':''}" style="${curTab===t.k?'background:'+t.c+'30':''}" onclick="switchTab('${t.k}')">${t.l}</button>`).join('');
-
+  document.getElementById('headerSub').textContent=`共 ${allData.length} 期資料　最新 ${allData[0].d}`+(added.length?`　已新增 +${added.length}`:'');
+  document.getElementById('latestBar').innerHTML=`<div class="latest-top"><div class="latest-title">最新開獎</div><div class="latest-date">${allData[0].d}</div></div><div class="latest-balls">${allData[0].n.map(x=>blW(x,42)).join('')}</div><div class="tail-row"><div class="tail-label">尾數 →</div>${A.latT.slice().sort((a,b)=>a-b).map(t=>blWT(t,36)).join('')}</div>`;
+  const tabs=[{k:"recommend",l:"🎯 推薦"},{k:"trans",l:"🔄 轉移"},{k:"nei",l:"👥 鄰號"},{k:"freq",l:"📊 頻率"},{k:"rep",l:"🔁 重複"},{k:"miss",l:"❄️ 遺漏"},{k:"oe",l:"🎲 奇偶"},{k:"add",l:"➕ 更新"}];
+  document.getElementById('tabBar').innerHTML=tabs.map(t=>`<button data-tab="${t.k}" class="${curTab===t.k?'on':''}" onclick="switchTab('${t.k}')">${t.l}</button>`).join('');
   renderTab(curTab);
 }
 
-function renderTab(k){
-  let A=analyze();
-  let el=document.getElementById('tab-'+k);
-  if(k==='recommend') renderRecommend(el,A);
-  else if(k==='trans') renderTrans(el,A);
-  else if(k==='nei') renderNei(el,A);
-  else if(k==='freq') renderFreq(el,A);
-  else if(k==='rep') renderRep(el,A);
-  else if(k==='miss') renderMiss(el,A);
-  else if(k==='oe') renderOE(el,A);
-  else if(k==='add') renderAdd(el,A);
-}
+function renderTab(k){let A=analyze(),el=document.getElementById('tab-'+k);if(k==='recommend')renderRec(el,A);else if(k==='trans')renderTr(el,A);else if(k==='nei')renderNe(el,A);else if(k==='freq')renderFr(el,A);else if(k==='rep')renderRp(el,A);else if(k==='miss')renderMs(el,A);else if(k==='oe')renderOe(el,A);else if(k==='add')renderAd(el);}
 
-function renderRecommend(el,A){
-  let top3=A.tailRk.slice(0,3);
-  // OE sim
-  let pool=[];top3.forEach(t=>A.tailNums[t.tail].forEach(n=>{if(!pool.includes(n))pool.push(n);}));pool.sort((a,b)=>a-b);
-  let oddP=pool.filter(x=>x%2===1),evenP=pool.filter(x=>x%2===0);
-  let totalC=comb(pool.length,5);
-  let p3o2e=totalC>0?comb(oddP.length,3)*comb(evenP.length,2)/totalC:0;
-  let p2o3e=totalC>0?comb(oddP.length,2)*comb(evenP.length,3)/totalC:0;
-  let fp3=comb(20,3)*comb(19,2)/comb(39,5);let fp2=comb(20,2)*comb(19,3)/comb(39,5);
+function renderRec(el,A){
+  let t3=A.tailRk.slice(0,3);
+  let pool=[];t3.forEach(t=>A.tailNums[t.tail].forEach(n=>{if(!pool.includes(n))pool.push(n);}));pool.sort((a,b)=>a-b);
+  let oP=pool.filter(x=>x%2===1),eP=pool.filter(x=>x%2===0);
+  let tC=comb(pool.length,5),p3=tC>0?comb(oP.length,3)*comb(eP.length,2)/tC:0,p2=tC>0?comb(oP.length,2)*comb(eP.length,3)/tC:0;
+  let fp3=comb(20,3)*comb(19,2)/comb(39,5),fp2=comb(20,2)*comb(19,3)/comb(39,5);
   let h3=A.oeM["3單2雙"]||0,h2=A.oeM["2單3雙"]||0;
-
-  let html=`
-  <div class="accent-box" style="background:linear-gradient(135deg,rgba(251,191,36,.08),rgba(239,68,68,.04));border:1px solid rgba(251,191,36,.2)">
-    <h2 style="font-size:15px;font-weight:700;color:#fbbf24;text-align:center;margin-bottom:2px">🎯 下一期推薦尾數 TOP 3</h2>
-    <p style="font-size:10px;color:#64748b;text-align:center;margin-bottom:14px">轉移28% 鄰號22% 頻率18% 重複17% 遺漏10% 奇偶5%</p>
-    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:14px">
-    ${top3.map((t,i)=>`<div class="medal-card" style="width:100px;background:${CL[t.tail]}12;border:2px solid ${CL[t.tail]}55">
-      <div class="medal-badge" style="background:${MCOL[i]}">${MEDALS[i]}</div>
-      <div style="font-size:36px;font-family:'Orbitron',monospace;font-weight:900;color:${CL[t.tail]};line-height:1">${t.tail}</div>
-      <div style="font-size:10px;color:#fbbf24;margin-top:6px;font-weight:700">綜合 ${t.score.toFixed(1)}</div>
-      <div style="font-size:9px;color:#64748b">連莊${t.stk}期 ｜ 共${t.cnt}次</div>
-    </div>`).join('')}
+  let topIdx=A.numRk.map(r=>r.num);
+  el.innerHTML=`
+  <div class="section-hdr">推薦尾數 TOP 3</div>
+  <div class="card"><div class="card-bd">
+    <div class="medal-grid">
+      ${t3.map((t,i)=>`<div class="medal-card"><div class="medal-badge" style="background:${MCOLS[i]}">${MEDALS[i]}</div><div style="font-size:54px;font-weight:900;color:${CL[t.tail]};line-height:1;margin-top:8px">${t.tail}</div><div style="font-size:18px;font-weight:800;color:${CL[t.tail]};margin-top:7px">${t.score.toFixed(1)}</div><div style="font-size:14px;color:var(--label3);margin-top:3px">連莊 ${t.stk} 期</div></div>`).join('')}
     </div>
-    <div style="background:rgba(0,0,0,.25);border-radius:12px;padding:12px">
-      <p style="font-size:12px;font-weight:700;color:#fbbf24;margin-bottom:6px">📌 拖牌展開</p>
-      ${top3.map(t=>{
-        let topIdx=A.numRk.map(r=>r.num);
-        return `<div class="expand-row">${ball(t.tail,22,true)}<span style="font-size:11px;color:#475569">→</span>
-        ${A.tailNums[t.tail].map(n=>{let hi=topIdx.indexOf(n)<8;
-          return `<span class="num-chip" style="background:${hi?'rgba(251,191,36,.12)':'rgba(255,255,255,.06)'};border:${hi?'1px solid rgba(251,191,36,.25)':'none'};color:${hi?'#fbbf24':'#94a3b8'}">${String(n).padStart(2,'0')}</span>`;}).join('')}</div>`;}).join('')}
+    <div style="background:var(--bg);border-radius:14px;padding:16px">
+      <div style="font-size:16px;font-weight:800;color:var(--label);margin-bottom:12px">▸ 展開號碼</div>
+      ${t3.map(t=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">${bl(t.tail,36,true)}<span style="font-size:18px;color:var(--label3)">→</span>${A.tailNums[t.tail].map(n=>{let hi=topIdx.indexOf(n)<8;return`<span class="num-chip" style="background:${hi?CL[n%10]+'18':'var(--bg3)'};color:${hi?CL[n%10]:'var(--label3)'};border:${hi?'2px solid '+CL[n%10]+'60':'none'}">${String(n).padStart(2,'0')}</span>`;}).join('')}</div>`).join('')}
     </div>
-  </div>
-
-  <div class="accent-box" style="background:linear-gradient(135deg,rgba(139,92,246,.08),rgba(236,72,153,.05));border:1px solid rgba(139,92,246,.2)">
-    <h2 style="font-size:15px;font-weight:700;color:#a78bfa;text-align:center;margin-bottom:2px">🎲 單雙試算機率</h2>
-    <p style="font-size:10px;color:#64748b;text-align:center;margin-bottom:14px">以推薦尾數 [${top3.map(t=>t.tail).join(', ')}] 的號碼池計算</p>
-    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;justify-content:center">
-      <div class="pool-group"><span style="font-size:10px;color:#fbbf24;font-weight:700">單(奇) ${oddP.length}個</span>
-        <div style="display:flex;gap:3px;margin-top:4px;flex-wrap:wrap">${oddP.map(n=>ball(n,22)).join('')}</div></div>
-      <div class="pool-group even"><span style="font-size:10px;color:#a78bfa;font-weight:700">雙(偶) ${evenP.length}個</span>
-        <div style="display:flex;gap:3px;margin-top:4px;flex-wrap:wrap">${evenP.map(n=>ball(n,22)).join('')}</div></div>
-    </div>
-    <div style="overflow-x:auto">
-    <table><thead><tr style="background:rgba(255,255,255,.03)">
-      <th style="text-align:left">組合</th><th style="color:#f97316">推薦池機率</th><th style="color:#8b5cf6">理論機率</th><th style="color:#22c55e">歷史${A.L}期</th>
-    </tr></thead><tbody>
-    <tr style="border-bottom:1px solid rgba(255,255,255,.04)"><td style="font-weight:700;text-align:left">3單2雙</td>
-      <td style="color:#f97316;font-weight:700">${(p3o2e*100).toFixed(1)}%</td><td style="color:#8b5cf6">${(fp3*100).toFixed(1)}%</td><td style="color:#22c55e">${h3}次 (${(h3/A.L*100).toFixed(1)}%)</td></tr>
-    <tr style="border-bottom:1px solid rgba(255,255,255,.04)"><td style="font-weight:700;text-align:left">2單3雙</td>
-      <td style="color:#f97316;font-weight:700">${(p2o3e*100).toFixed(1)}%</td><td style="color:#8b5cf6">${(fp2*100).toFixed(1)}%</td><td style="color:#22c55e">${h2}次 (${(h2/A.L*100).toFixed(1)}%)</td></tr>
-    <tr class="hl"><td style="font-weight:700;text-align:left;color:#fbbf24">合計</td>
-      <td style="color:#fbbf24;font-weight:700">${((p3o2e+p2o3e)*100).toFixed(1)}%</td><td style="color:#fbbf24">${((fp3+fp2)*100).toFixed(1)}%</td><td style="color:#fbbf24">${h3+h2}次 (${((h3+h2)/A.L*100).toFixed(1)}%)</td></tr>
-    </tbody></table></div>
-    <p style="font-size:10px;color:#64748b;margin-top:10px;line-height:1.6">📊 <b style="color:#94a3b8">推薦池</b>＝從${pool.length}個號碼中選5個的組合機率 ｜ 📐 <b style="color:#94a3b8">理論</b>＝全1~39 ｜ 📈 <b style="color:#94a3b8">歷史</b>＝近${A.L}期實際</p>
-  </div>
-
-  <div class="box"><div class="box-hd"><h3>🏆 推薦號碼 TOP 10</h3></div><div class="box-bd">
-    ${A.numRk.slice(0,10).map((r,i)=>{let mx=A.numRk[0].score;
-      return `<div class="row"><span style="width:20px;font-size:11px;color:${i<3?'#fbbf24':'#475569'};font-weight:700;text-align:right">${i<3?MEDALS[i]:i+1}</span>${ball(r.num,28)}${bar(r.score/mx*100,CL[r.num%10],14)}<span style="font-size:11px;color:#e2e8f0;font-weight:600;min-width:38px;text-align:right">${r.score.toFixed(1)}</span></div>`;}).join('')}
   </div></div>
-  <div style="text-align:center"><button class="btn-tab-add" onclick="switchTab('add')">➕ 新增今天開獎號碼</button></div>`;
-  el.innerHTML=html;
+
+  <div class="section-hdr">推薦號碼 TOP 10</div>
+  <div class="card"><div class="card-bd">
+    ${A.numRk.slice(0,10).map((r,i)=>{let mx=A.numRk[0].score;return`<div class="row"><span class="rank-num ${i<3?['rank-1','rank-2','rank-3'][i]:''}">${i<3?['①','②','③'][i]:i+1}</span>${bl(r.num,38)}${br(r.score/mx*100,CL[r.num%10],18)}<span style="font-size:17px;color:var(--label);font-weight:800;min-width:46px;text-align:right">${r.score.toFixed(1)}</span></div>`;}).join('')}
+  </div></div>
+
+  <div class="section-hdr">單雙機率試算</div>
+  <div class="card"><div class="card-bd">
+    <div class="pool-row">
+      <div class="pool-group"><div class="pool-label" style="color:var(--orange)">單（奇）${oP.length} 個</div><div class="pool-balls">${oP.map(n=>bl(n,30)).join('')}</div></div>
+      <div class="pool-group"><div class="pool-label" style="color:var(--purple)">雙（偶）${eP.length} 個</div><div class="pool-balls">${eP.map(n=>bl(n,30)).join('')}</div></div>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th style="text-align:left;padding-left:14px">組合</th><th style="color:var(--orange)">推薦池</th><th style="color:var(--purple)">理論值</th><th style="color:var(--green)">歷史 ${A.L} 期</th></tr></thead>
+      <tbody>
+        <tr><td style="font-weight:700;text-align:left;padding-left:14px">3單2雙</td><td style="color:var(--orange);font-weight:800">${(p3*100).toFixed(1)}%</td><td style="color:var(--purple)">${(fp3*100).toFixed(1)}%</td><td style="color:var(--green)">${h3} 次</td></tr>
+        <tr><td style="font-weight:700;text-align:left;padding-left:14px">2單3雙</td><td style="color:var(--orange);font-weight:800">${(p2*100).toFixed(1)}%</td><td style="color:var(--purple)">${(fp2*100).toFixed(1)}%</td><td style="color:var(--green)">${h2} 次</td></tr>
+        <tr class="hl"><td style="font-weight:800;text-align:left;padding-left:14px">合計</td><td style="font-weight:900">${((p3+p2)*100).toFixed(1)}%</td><td>${((fp3+fp2)*100).toFixed(1)}%</td><td>${h3+h2} 次</td></tr>
+      </tbody>
+    </table></div>
+  </div></div>
+  <div style="text-align:center;padding:6px 0 24px"><button class="btn-tab-add" onclick="switchTab('add')">➕ 更新開獎號碼</button></div>`;
 }
 
-function renderTrans(el,A){
-  let gapBtns=[1,2,3,4,5].map(g=>`<button class="btn-gap ${selGap===g?'on':''}" onclick="selGap=${g};renderTab('trans')"">隔${g}期</button>`).join('');
-  let rows=A.latT.slice().sort((a,b)=>a-b).map(fr=>{
-    let tot=A.trT[selGap][fr]||1;
-    let row=A.tr[selGap][fr].map((c,to)=>({to,pct:c/tot*100})).sort((a,b)=>b.pct-a.pct);
-    return `<div style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">${ball(fr,26,true)}<span style="font-size:11px;color:#64748b">隔${selGap}期→</span></div>
-    <div style="padding-left:34px">${row.slice(0,5).map((r,i)=>`<div class="row">${ball(r.to,20,true)}${bar(r.pct,CL[r.to],12)}<span style="font-size:11px;color:${i===0?'#fbbf24':'#94a3b8'};font-weight:${i===0?700:400};min-width:38px;text-align:right">${r.pct.toFixed(1)}%</span></div>`).join('')}</div></div>`;}).join('');
-  let trTop=Object.entries(A.trNum).map(e=>({num:+e[0],score:e[1]*100})).sort((a,b)=>b.score-a.score);
-  let mx=trTop.length?trTop[0].score:1;
-  el.innerHTML=`<div class="box"><div class="box-hd"><h3>🔄 轉移矩陣</h3><p>最新期尾數出現後，隔 N 期最常出現的尾數</p></div><div class="box-bd">
-  <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">${gapBtns}</div>${rows}</div></div>
-  <div class="box"><div class="box-hd"><h3>轉移預測號碼 TOP 10</h3></div><div class="box-bd">
-  ${trTop.slice(0,10).map((r,i)=>`<div class="row"><span style="width:20px;font-size:11px;color:${i<3?'#fbbf24':'#475569'};font-weight:700;text-align:right">${i+1}</span>${ball(r.num,24)}${bar(r.score/mx*100,CL[r.num%10],12)}<span style="font-size:11px;color:#94a3b8;min-width:38px;text-align:right">${r.score.toFixed(1)}</span></div>`).join('')}
+function calcNumTrans(D, gap){
+  /* 統計：號碼 fr 出現後，隔 gap 期，各號碼出現次數 */
+  const cnt={}, total={};
+  for(let i=gap;i<D.length;i++){
+    D[i].n.forEach(fr=>{
+      total[fr]=(total[fr]||0)+1;
+      D[i-gap].n.forEach(to=>{
+        const key=fr+'-'+to;
+        cnt[key]=(cnt[key]||0)+1;
+      });
+    });
+  }
+  return{cnt,total};
+}
+
+function renderTr(el,A){
+  const gB=[1,2,3,4,5].map(g=>`<button class="btn-gap ${selGap===g?'on':''}" onclick="selGap=${g};renderTab('trans')">隔 ${g} 期</button>`).join('');
+
+  /* ── 尾數轉移 ── */
+  const tailRows=A.latT.slice().sort((a,b)=>a-b).map(fr=>{
+    const tot=A.trT[selGap][fr]||1;
+    const row=A.tr[selGap][fr].map((c,to)=>({to,pct:c/tot*100})).sort((a,b)=>b.pct-a.pct);
+    return`<div style="padding:14px 20px;border-bottom:1px solid var(--sep2)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">${bl(fr,34,true)}<span style="font-size:14px;color:var(--label3)">隔 ${selGap} 期後最常出現的尾數</span></div>
+      <div style="padding-left:44px">${row.slice(0,5).map((r,i)=>`<div class="row">${bl(r.to,30,true)}${br(r.pct,CL[r.to],13)}<span style="font-size:15px;color:${i===0?'var(--orange)':'var(--label2)'};font-weight:${i===0?800:600};min-width:46px;text-align:right">${r.pct.toFixed(1)}%</span></div>`).join('')}</div>
+    </div>`;
+  }).join('');
+
+  /* ── 號碼轉移 ── */
+  const {cnt,total}=calcNumTrans(A.D, selGap);
+  const numRows=A.latest.map(fr=>{
+    const tot=total[fr]||1;
+    const candidates=[];
+    for(let to=1;to<=39;to++){
+      const c=cnt[fr+'-'+to]||0;
+      if(c>0) candidates.push({to,c,pct:c/tot*100});
+    }
+    candidates.sort((a,b)=>b.c-a.c);
+    const top=candidates.slice(0,8);
+    const mxC=top.length?top[0].c:1;
+    return`<div style="padding:14px 20px;border-bottom:1px solid var(--sep2)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        ${bl(fr,38)}<div>
+          <div style="font-size:16px;font-weight:700;color:var(--label)">號碼 ${String(fr).padStart(2,'0')} 出現後　隔 ${selGap} 期</div>
+          <div style="font-size:13px;color:var(--label3)">最常跟著出現的號碼（共統計 ${tot} 次）</div>
+        </div>
+      </div>
+      <div style="padding-left:48px">
+        ${top.length===0?`<div style="font-size:14px;color:var(--label3)">資料不足</div>`:
+          top.map((r,i)=>`<div class="row">
+            <span class="rank-num ${i<3?['rank-1','rank-2','rank-3'][i]:''}">${i+1}</span>
+            ${bl(r.to,34)}
+            ${br(r.c/mxC*100,CL[r.to%10],14)}
+            <span style="font-size:15px;color:${i===0?'var(--orange)':'var(--label2)'};font-weight:${i===0?800:600};min-width:72px;text-align:right">${r.c} 次 (${r.pct.toFixed(0)}%)</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  /* ── 號碼轉移綜合 TOP 10 ── */
+  const trTop=Object.entries(A.trNum).map(e=>({num:+e[0],score:e[1]*100})).sort((a,b)=>b.score-a.score);
+  const mx=trTop.length?trTop[0].score:1;
+
+  el.innerHTML=`
+  <div style="padding:14px 16px 0;display:flex;gap:8px;flex-wrap:wrap">${gB}</div>
+
+  <div class="section-hdr">尾數轉移分析</div>
+  <div class="card">
+    <div class="card-hd"><h3>🔄 尾數轉移</h3><p>最新期各尾數，隔 ${selGap} 期後最常出現的尾數</p></div>
+    ${tailRows}
+  </div>
+
+  <div class="section-hdr">號碼轉移分析</div>
+  <div class="card">
+    <div class="card-hd"><h3>🎯 號碼轉移</h3><p>最新期各號碼，隔 ${selGap} 期後最常跟著出現的號碼</p></div>
+    ${numRows}
+  </div>
+
+  <div class="section-hdr">綜合轉移預測 TOP 10</div>
+  <div class="card"><div class="card-bd">
+    ${trTop.slice(0,10).map((r,i)=>`<div class="row"><span class="rank-num ${i<3?['rank-1','rank-2','rank-3'][i]:''}">${i+1}</span>${bl(r.num,36)}${br(r.score/mx*100,CL[r.num%10],16)}<span style="font-size:16px;color:var(--label2);font-weight:700;min-width:44px;text-align:right">${r.score.toFixed(1)}</span></div>`).join('')}
   </div></div>`;
 }
 
-function renderNei(el,A){
-  let rows=A.latest.map(x=>{
-    let nbs=[-2,-1,1,2].map(d=>x+d).filter(nb=>nb>=1&&nb<=39).sort((a,b)=>(A.neiSc[b]||0)-(A.neiSc[a]||0));
-    return `<div style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">${ball(x,28)}<span style="font-size:11px;color:#475569">的鄰號：</span></div>
-    <div style="display:flex;gap:5px;padding-left:36px;flex-wrap:wrap">${nbs.map((nb,i)=>`<div style="background:${i===0?'rgba(251,191,36,.1)':'rgba(255,255,255,.03)'};border-radius:10px;padding:5px 8px;border:${i===0?'1px solid rgba(251,191,36,.25)':'1px solid rgba(255,255,255,.05)'};text-align:center">${ball(nb,24)}<div style="font-size:9px;color:${i===0?'#fbbf24':'#64748b'};margin-top:2px">${(A.neiSc[nb]||0).toFixed(1)}</div></div>`).join('')}</div></div>`;}).join('');
-  el.innerHTML=`<div class="box"><div class="box-hd"><h3>👥 鄰號分析</h3><p>±1 權重1.5x ±2 權重1.0x ｜ 歷史命中率 ${(A.neiRate*100).toFixed(1)}%</p></div><div class="box-bd">${rows}</div></div>`;
+function renderNe(el,A){
+  el.innerHTML=`<div class="section-hdr">鄰號分析</div><div style="padding:0 16px 12px;display:flex;gap:8px;flex-wrap:wrap"><div class="stat-pill">命中率 <span class="stat-val">${(A.neiRate*100).toFixed(1)}%</span></div><div class="stat-pill">±1 × 1.5　±2 × 1.0</div></div><div class="card">${A.latest.map(x=>{let nbs=[-2,-1,1,2].map(d=>x+d).filter(nb=>nb>=1&&nb<=39).sort((a,b)=>(A.neiSc[b]||0)-(A.neiSc[a]||0));return`<div style="padding:16px 20px;border-bottom:1px solid var(--sep2)"><div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">${bl(x,40)}<div><div style="font-size:17px;font-weight:700;color:var(--label)">號碼 ${String(x).padStart(2,'0')} 的鄰號</div><div style="font-size:14px;color:var(--label3)">歷史最強候選</div></div></div><div style="display:flex;gap:8px;padding-left:52px;flex-wrap:wrap">${nbs.map((nb,i)=>`<div style="background:${i===0?CL[nb%10]+'12':'var(--bg)'};border-radius:14px;padding:10px 14px;border:${i===0?'2px solid '+CL[nb%10]+'50':'1px solid var(--sep2)'};text-align:center;min-width:64px">${bl(nb,32)}<div style="font-size:13px;font-weight:700;color:${i===0?CL[nb%10]:'var(--label3)'};margin-top:5px">${(A.neiSc[nb]||0).toFixed(1)}</div></div>`).join('')}</div></div>`;}).join('')}</div>`;
 }
 
-function renderFreq(el,A){
+function renderFr(el,A){
   let items=[];for(let n=1;n<=39;n++){let sc=(A.cnt[n]/(A.L*5)*39)*30+(A.r10[n]/10*39)*40+(A.stk[n]>=3?30:A.stk[n]>=2?20:A.stk[n]>=1?10:0);items.push({num:n,score:sc,cnt:A.cnt[n],r10:A.r10[n],stk:A.stk[n]});}
   items.sort((a,b)=>b.score-a.score);let mx=items[0].score;
-  el.innerHTML=`<div class="box"><div class="box-hd"><h3>📊 頻率 + 連莊</h3><p>近${A.L}期出現次數 + 近10期加權 + 連莊加成</p></div><div class="box-bd">
-  ${items.slice(0,15).map((item,i)=>`<div class="row"><span style="width:20px;font-size:11px;color:${i<3?'#fbbf24':'#475569'};font-weight:700;text-align:right">${i+1}</span>${ball(item.num,26)}${bar(item.score/mx*100,'#22c55e',14)}<span style="font-size:10px;color:#94a3b8;min-width:88px;text-align:right">${item.cnt}次 近10:${item.r10} 連${item.stk}</span></div>`).join('')}
-  </div></div>`;
+  el.innerHTML=`<div class="section-hdr">頻率 + 連莊</div><div class="card"><div class="card-hd"><h3>📊 出現頻率排行</h3><p>近 ${A.L} 期次數 + 近10期加權 + 連莊加成</p></div><div class="card-bd">${items.slice(0,15).map((it,i)=>`<div class="row"><span class="rank-num ${i<3?['rank-1','rank-2','rank-3'][i]:''}">${i+1}</span>${bl(it.num,36)}${br(it.score/mx*100,CL[it.num%10],16)}<span style="font-size:14px;color:var(--label3);font-weight:600;min-width:114px;text-align:right">${it.cnt}次　近10:${it.r10}　連${it.stk}</span></div>`).join('')}</div></div>`;
 }
 
-function renderRep(el,A){
-  let sorted=A.latest.slice().sort((a,b)=>(A.repN[b]||0)-(A.repN[a]||0));
-  let mx=Math.max(...A.latest.map(x=>A.repN[x]||0));
-  el.innerHTML=`<div class="box"><div class="box-hd"><h3>🔁 重複號分析</h3><p>歷史重複率 ${(A.repRate*100).toFixed(1)}% ｜ 平均每期約 ${(A.repRate*5).toFixed(1)} 個重複</p></div><div class="box-bd">
-  <p style="font-size:12px;color:#fbbf24;margin-bottom:8px;font-weight:600">上期號碼的歷史重複次數：</p>
-  ${sorted.map((n,i)=>`<div class="row"><span style="width:20px;font-size:11px;color:${i<2?'#fbbf24':'#475569'};font-weight:700;text-align:right">${i+1}</span>${ball(n,28)}${bar(mx>0?(A.repN[n]||0)/mx*100:0,'#ec4899',14)}<span style="font-size:11px;color:#e2e8f0;font-weight:600;min-width:36px;text-align:right">${A.repN[n]||0}次</span></div>`).join('')}
-  </div></div>`;
+function renderRp(el,A){
+  let sorted=A.latest.slice().sort((a,b)=>(A.repN[b]||0)-(A.repN[a]||0));let mx=Math.max(...A.latest.map(x=>A.repN[x]||0),1);
+  el.innerHTML=`<div class="section-hdr">重複號分析</div><div style="padding:0 16px 12px;display:flex;gap:8px;flex-wrap:wrap"><div class="stat-pill">歷史重複率 <span class="stat-val">${(A.repRate*100).toFixed(1)}%</span></div><div class="stat-pill">每期約 <span class="stat-val">${(A.repRate*5).toFixed(1)}</span> 個</div></div><div class="card"><div class="card-hd"><h3>🔁 上期號碼重複排序</h3><p>歷史上，下一期繼續開出的次數</p></div><div class="card-bd">${sorted.map((n,i)=>`<div class="row"><span class="rank-num ${i<2?'rank-1':''}">${i+1}</span>${bl(n,38)}${br(mx>0?(A.repN[n]||0)/mx*100:0,CL[n%10],16)}<span style="font-size:18px;font-weight:800;color:var(--label);min-width:48px;text-align:right">${A.repN[n]||0} 次</span></div>`).join('')}</div></div>`;
 }
 
-function renderMiss(el,A){
-  let nums=Array.from({length:39},(_,i)=>i+1).sort((a,b)=>A.miss[a]-A.miss[b]);
-  let mx=Math.max(...A.miss.slice(1));
-  el.innerHTML=`<div class="box"><div class="box-hd"><h3>❄️ 遺漏值追蹤</h3><p>0期＝剛開出（最熱）｜ 越大＝越久沒開</p></div><div class="box-bd" style="max-height:450px;overflow-y:auto">
-  ${nums.map(n=>{let m=A.miss[n];let c=m===0?'#22c55e':m<=2?'#fbbf24':m<=5?'#f97316':'#ef4444';
-    return `<div class="row">${ball(n,24)}${bar(mx>0?m/mx*100:0,c,12)}<span style="font-size:11px;color:${c};font-weight:${m<=1?700:400};min-width:42px;text-align:right">${m}期</span>${m===0?'<span style="font-size:9px;color:#22c55e;font-weight:700">🔥</span>':''}</div>`;}).join('')}
-  </div></div>`;
+function renderMs(el,A){
+  let nums=Array.from({length:39},(_,i)=>i+1).sort((a,b)=>A.miss[a]-A.miss[b]);let mx=Math.max(...A.miss.slice(1),1);
+  el.innerHTML=`<div class="section-hdr">遺漏值追蹤</div><div class="card"><div class="card-hd"><h3>❄️ 遺漏期數排行</h3><p>0 期 ＝ 剛才開出　數字越大 ＝ 越久沒出</p></div><div class="card-bd" style="max-height:480px;overflow-y:auto">${nums.map(n=>{let m=A.miss[n];let c=m===0?'var(--green)':m<=2?'#b8860b':m<=5?'var(--orange)':'var(--red)';let bc=m===0?'#34c759':m<=2?'#cc9900':m<=5?'#ff9500':'#ff3b30';return`<div class="row">${bl(n,34)}${br(m/mx*100,bc,14)}<span style="font-size:17px;color:${c};font-weight:800;min-width:52px;text-align:right">${m} 期</span>${m===0?'<span style="font-size:20px">🔥</span>':''}</div>`;}).join('')}</div></div>`;
 }
 
-function renderOE(el,A){
-  let mxOE=A.topOE[0][1],mxBS=A.topBS[0][1];
-  el.innerHTML=`
-  <div class="box"><div class="box-hd"><h3>🎲 奇偶(單雙)分布</h3></div><div class="box-bd">
-  ${A.topOE.map((e,i)=>`<div class="row"><span style="font-size:12px;font-weight:${i===0?700:400};color:${i===0?'#fbbf24':'#e2e8f0'};min-width:65px">${i===0?'→ ':''}${e[0]}</span>${bar(e[1]/mxOE*100,'#8b5cf6',16)}<span style="font-size:11px;color:#94a3b8;min-width:55px;text-align:right">${e[1]}次 (${(e[1]/allData.length*100).toFixed(0)}%)</span></div>`).join('')}
-  </div></div>
-  <div class="box"><div class="box-hd"><h3>📏 大小比</h3><p>1~19 小 ｜ 20~39 大</p></div><div class="box-bd">
-  ${A.topBS.map((e,i)=>`<div class="row"><span style="font-size:12px;font-weight:${i===0?700:400};color:${i===0?'#fbbf24':'#e2e8f0'};min-width:65px">${i===0?'→ ':''}${e[0]}</span>${bar(e[1]/mxBS*100,'#06b6d4',16)}<span style="font-size:11px;color:#94a3b8;min-width:55px;text-align:right">${e[1]}次 (${(e[1]/allData.length*100).toFixed(0)}%)</span></div>`).join('')}
-  </div></div>`;
+function renderOe(el,A){
+  let mO=A.topOE[0][1],mB=A.topBS[0][1];
+  el.innerHTML=`<div class="section-hdr">奇偶（單雙）分布</div><div class="card"><div class="card-hd"><h3>🎲 奇偶比</h3></div><div class="card-bd">${A.topOE.map((e,i)=>`<div class="row"><span style="font-size:17px;font-weight:${i===0?800:600};color:${i===0?'var(--label)':'var(--label2)'};min-width:76px">${i===0?'▶ ':' '}${e[0]}</span>${br(e[1]/mO*100,i===0?'var(--purple)':'var(--bg3)',20)}<span style="font-size:16px;color:var(--label2);font-weight:700;min-width:80px;text-align:right">${e[1]} 次 (${(e[1]/allData.length*100).toFixed(0)}%)</span></div>`).join('')}</div></div><div class="section-hdr">大小比</div><div class="card"><div class="card-hd"><h3>📏 大小比例</h3><p>1–19 小號　20–39 大號</p></div><div class="card-bd">${A.topBS.map((e,i)=>`<div class="row"><span style="font-size:17px;font-weight:${i===0?800:600};color:${i===0?'var(--label)':'var(--label2)'};min-width:76px">${i===0?'▶ ':' '}${e[0]}</span>${br(e[1]/mB*100,i===0?'var(--teal)':'var(--bg3)',20)}<span style="font-size:16px;color:var(--label2);font-weight:700;min-width:80px;text-align:right">${e[1]} 次 (${(e[1]/allData.length*100).toFixed(0)}%)</span></div>`).join('')}</div></div>`;
 }
 
-function renderAdd(el){
+
+function renderAd(el){
   let added=allData.filter(r=>!INIT_DATA.some(ir=>ir.d===r.d));
-  let now=new Date();let defDate=now.getFullYear()+"/"+String(now.getMonth()+1).padStart(2,"0")+"/"+String(now.getDate()).padStart(2,"0");
+  let now=new Date();
+  let defDate=now.getFullYear()+"/"+String(now.getMonth()+1).padStart(2,"0")+"/"+String(now.getDate()).padStart(2,"0");
   el.innerHTML=`
-  <div class="accent-box" style="background:linear-gradient(135deg,rgba(34,197,94,.08),rgba(34,197,94,.02));border:1px solid rgba(34,197,94,.2)">
-    <h2 style="font-size:15px;font-weight:700;color:#22c55e;margin-bottom:3px">➕ 新增開獎號碼</h2>
-    <p style="font-size:11px;color:#64748b;margin-bottom:12px">每天 22:00 後輸入，全部方法自動重算</p>
-    <div style="margin-bottom:10px"><label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px">日期</label>
-      <input id="addDate" class="inp" style="width:170px" value="${defDate}" placeholder="YYYY/MM/DD"></div>
-    <div style="margin-bottom:12px"><label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px">號碼（01~39）</label>
-      <div style="display:flex;gap:7px;flex-wrap:wrap">
-        ${[0,1,2,3,4].map(i=>`<input id="addNum${i}" class="inp inp-num" placeholder="#${i+1}" maxlength="2" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,2);if(this.value.length===2&&${i}<4)document.getElementById('addNum${i+1}').focus();">`).join('')}
+  <div class="section-hdr">新增開獎號碼</div>
+  <div class="card">
+    <div class="card-hd"><h3>✏️ 輸入開獎號碼</h3><p>開獎時間：週一至週六　晚間 8:30</p></div>
+    <div class="card-bd">
+      <div style="margin-bottom:18px">
+        <label class="field-label">日期</label>
+        <input id="addDate" class="inp" style="width:200px" value="${defDate}" placeholder="YYYY/MM/DD">
       </div>
+      <div style="margin-bottom:22px">
+        <label class="field-label">號碼（01 ~ 39）</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${[0,1,2,3,4].map(i=>`<input id="addNum${i}" class="inp inp-num" placeholder="${i+1}" maxlength="2" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,2);if(this.value.length===2&&${i}<4)document.getElementById('addNum${i+1}').focus();">`).join('')}
+        </div>
+      </div>
+      <button class="btn-primary btn-green" style="max-width:260px" onclick="doAdd()">✓ 確認新增</button>
+      <div id="addMsg"></div>
     </div>
-    <button class="btn-add" onclick="doAdd()">確認新增 ＆ 重算</button>
-    <div id="addMsg"></div>
   </div>
-  ${added.length?`<div class="box"><div class="box-hd"><h3>已新增 ${added.length} 期</h3></div><div class="box-bd">
-  ${added.map(r=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.03);flex-wrap:wrap">
-    <div style="display:flex;align-items:center;gap:5px"><span style="font-size:11px;color:#22c55e;font-family:monospace">${r.d}</span>${r.n.map(x=>ball(x,22)).join('')}</div>
-    <button class="btn-del" onclick="doDelete('${r.d}')">刪除</button></div>`).join('')}
-  </div></div>`:''}
-  <div style="text-align:center"><button class="btn-reset" onclick="doReset()">🔄 恢復初始資料</button></div>`;
+
+  ${added.length?`<div class="section-hdr">已新增 ${added.length} 期</div><div class="card">${added.map(r=>`<div class="list-row"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:15px;color:var(--green);font-weight:700">${r.d}</span>${r.n.map(x=>bl(x,30)).join('')}</div><button class="btn-del" onclick="doDelete('${r.d}')">刪除</button></div>`).join('')}</div>`:''}
+
+  <div style="text-align:center;padding:10px 0 20px">
+    <button class="btn-reset" onclick="doReset()">↺ 恢復初始資料</button>
+  </div>`;
 }
 
-/* ═══ ACTIONS ═══ */
 function doAdd(){
   let date=document.getElementById('addDate').value;
   let nums=[];for(let i=0;i<5;i++){let v=parseInt(document.getElementById('addNum'+i).value);nums.push(v);}
   let parsed=nums.filter(x=>!isNaN(x)&&x>=1&&x<=39);
   let msgEl=document.getElementById('addMsg');
-  if(parsed.length!==5){msgEl.innerHTML='<div class="msg err">❌ 請輸入5個 1~39 號碼</div>';return;}
+  if(parsed.length!==5){msgEl.innerHTML='<div class="msg err">❌ 請輸入 5 個 1～39 號碼</div>';return;}
   if(new Set(parsed).size!==5){msgEl.innerHTML='<div class="msg err">❌ 號碼不可重複</div>';return;}
-  if(!date.match(/^\d{4}\/\d{2}\/\d{2}$/)){msgEl.innerHTML='<div class="msg err">❌ 日期格式 YYYY/MM/DD</div>';return;}
+  if(!date.match(/^\d{4}\/\d{2}\/\d{2}$/)){msgEl.innerHTML='<div class="msg err">❌ 日期格式：YYYY/MM/DD</div>';return;}
   if(allData.some(r=>r.d===date)){msgEl.innerHTML='<div class="msg err">❌ 該日期已有資料</div>';return;}
   let sorted=[...parsed].sort((a,b)=>a-b);
   allData=[{d:date,n:sorted},...allData];
+  allData.sort((a,b)=>b.d.localeCompare(a.d));
   saveData();renderAll();
-  msgEl=document.getElementById('addMsg');
-  if(msgEl)msgEl.innerHTML=`<div class="msg ok">✅ 已新增 ${date}：${sorted.join(', ')}</div>`;
 }
 function doDelete(d){allData=allData.filter(r=>r.d!==d);saveData();renderAll();}
-function doReset(){allData=[...INIT_DATA];try{localStorage.removeItem('lotto539-html-v1');}catch(e){}renderAll();}
+function doReset(){allData=[...INIT_DATA];try{localStorage.removeItem('l539v5');}catch(e){}renderAll();}
 
-/* ═══ INIT ═══ */
-let saved=loadData();
-allData=saved||[...INIT_DATA];
-renderAll();
+let saved=loadData();allData=saved||[...INIT_DATA];renderAll();
 </script>
 </body>
 </html>
