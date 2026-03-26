@@ -119,6 +119,8 @@ tr.hl td{font-weight:900;font-size:17px}
 <div id="tab-oe"        class="tab-content"></div>
 <div id="tab-struct"    class="tab-content"></div>
 <div id="tab-ml"        class="tab-content"></div>
+<div id="tab-pair"      class="tab-content"></div>
+<div id="tab-chi"       class="tab-content"></div>
 <div id="tab-add"       class="tab-content"></div>
 
 <div class="footer">⚠️ 僅供娛樂參考，樂透為隨機事件，請理性投注。<br>未滿18歲不得購買彩券。</div>
@@ -323,10 +325,37 @@ function analyze(customData){
   let mk2Mx=Math.max(...mk2Sc.slice(1),1);
   let mk2Norm=mk2Sc.map(s=>mk2Mx>0?s/mk2Mx*100:0);
 
+  /* 配對分析（雙星組合）*/
+  let pairCnt={};
+  D.forEach(r=>{for(let i=0;i<r.n.length;i++)for(let j=i+1;j<r.n.length;j++){let k=r.n[i]+'-'+r.n[j];pairCnt[k]=(pairCnt[k]||0)+1;}});
+  let pairSc=new Array(40).fill(0),pairScore={};
+  let topPairs=Object.entries(pairCnt).sort((a,b)=>b[1]-a[1]).slice(0,30);
+  for(let n=1;n<=39;n++){
+    let sc=0;
+    latest.forEach(x=>{if(x===n)return;let k=Math.min(x,n)+'-'+Math.max(x,n);sc+=(pairCnt[k]||0);});
+    pairSc[n]=sc;pairScore[n]=sc;
+  }
+  let pairMx=Math.max(...pairSc.slice(1),1);
+  let pairNorm=pairSc.map(s=>pairMx>0?s/pairMx*100:0);
+
+  /* 卡方檢定（統計顯著性）*/
+  let expected=L*5/39;
+  let chiSc=new Array(40).fill(0),chiScore={},chiRaw={};
+  for(let n=1;n<=39;n++){
+    let obs=cnt[n];
+    let chi2=Math.pow(obs-expected,2)/expected;
+    chiRaw[n]={obs,expected:expected.toFixed(1),chi2,hot:obs>expected};
+    // 只給「出現高於期望」的號碼加分，冷號不加分（避免追冷）
+    chiSc[n]=obs>expected?Math.min(chi2*15,100):Math.max(0,30-chi2*5);
+    chiScore[n]=chiSc[n];
+  }
+  let chiMx=Math.max(...chiSc.slice(1),1);
+  let chiNorm=chiSc.map(s=>chiMx>0?s/chiMx*100:0);
+
   /* ── 綜合評分（使用自適應權重）── */
   let W=getWeights();
   let tailFinal=new Array(10).fill(0);
-  for(let t=0;t<10;t++)tailFinal[t]=trTailN[t]*W.tr+neiTNorm[t]*W.nei+freqNorm[t]*W.fq+repTNorm[t]*W.rp+missN[t]*W.ms+50*(W.math+W.trend+W.cycle+W.bayes+W.markov);
+  for(let t=0;t<10;t++)tailFinal[t]=trTailN[t]*W.tr+neiTNorm[t]*W.nei+freqNorm[t]*W.fq+repTNorm[t]*W.rp+missN[t]*W.ms+50*(W.math+W.trend+W.cycle+W.bayes+W.markov+W.pair+W.chi);
   let tailRk=tailFinal.map((s,i)=>({tail:i,score:s,cnt:tCnt[i],r10:tR10[i],stk:tStk[i],gap:tMiss[i]})).sort((a,b)=>b.score-a.score);
   let numFinal={};
   for(let n=1;n<=39;n++){
@@ -340,7 +369,9 @@ function analyze(customData){
     let cyS=cycleNorm[n]*W.cycle;
     let byS=bayesNorm[n]*W.bayes;
     let mkS=mk2Norm[n]*W.markov;
-    numFinal[n]={total:tS+fS+nS+rS+mS+maS+trS+cyS+byS+mkS,tS,fS,nS,rS,mS,maS,trS,cyS,byS,mkS};
+    let paS=pairNorm[n]*W.pair;
+    let chS=chiNorm[n]*W.chi;
+    numFinal[n]={total:tS+fS+nS+rS+mS+maS+trS+cyS+byS+mkS+paS+chS,tS,fS,nS,rS,mS,maS,trS,cyS,byS,mkS,paS,chS};
   }
   let numRk=Object.keys(numFinal).map(k=>({num:+k,score:numFinal[+k].total,detail:numFinal[+k]})).sort((a,b)=>b.score-a.score);
   let tailNums=[];for(let t=0;t<10;t++){let a=[];for(let n=1;n<=39;n++)if(n%10===t)a.push(n);tailNums.push(a);}
@@ -349,18 +380,19 @@ function analyze(customData){
   return{D,L,latest,latT,tails,cnt,r10,stk,miss,tCnt,tStk,tMiss,tR10,
     tr,trT,nF,trNum,neiSc,neiRate,neiHit,repN,repRate,repSc,
     topOE,topBS,tailRk,numRk,tailNums,oeM,
-    mathNorm,trendNorm,cycleNorm,bayesNorm,mk2Norm,
+    mathNorm,trendNorm,cycleNorm,bayesNorm,mk2Norm,pairNorm,chiNorm,
     sumDist,spanDist,acDist,consecDist,zoneDist,
     sumMean,sumQ20,sumQ80,spanQ20,spanQ80,acQ20,acQ80,consAvg,topZone,
     topAC,topConsec,topSumBin,topSpanBin,
     avgInterval,periodScore,heatScore,consecSc,mk2Score,bayesScore,
+    pairScore,pairCnt,topPairs,chiScore,chiRaw,expected,
     calcAC,calcSum,calcSpan,calcConsec,calcZone,W};
 }
 
 /* ═══ BACKTEST ENGINE ═══ */
-const DIM_KEYS=['tr','nei','fq','rp','ms','math','trend','cycle','bayes','markov'];
-const DIM_NAMES={tr:'轉移矩陣',nei:'鄰號分析',fq:'頻率連莊',rp:'重複號',ms:'遺漏追蹤',math:'數學結構',trend:'走勢位置',cycle:'時間序列',bayes:'貝氏更新',markov:'馬可夫鏈'};
-const DEFAULT_W={tr:.18,nei:.14,fq:.11,rp:.10,ms:.07,math:.11,trend:.09,cycle:.09,bayes:.07,markov:.04};
+const DIM_KEYS=['tr','nei','fq','rp','ms','math','trend','cycle','bayes','markov','pair','chi'];
+const DIM_NAMES={tr:'轉移矩陣',nei:'鄰號分析',fq:'頻率連莊',rp:'重複號',ms:'遺漏追蹤',math:'數學結構',trend:'走勢位置',cycle:'時間序列',bayes:'貝氏更新',markov:'馬可夫鏈',pair:'配對分析',chi:'卡方檢定'};
+const DEFAULT_W={tr:.16,nei:.12,fq:.10,rp:.09,ms:.06,math:.10,trend:.08,cycle:.08,bayes:.06,markov:.03,pair:.07,chi:.05};
 
 let adaptiveW=null; // will be computed by backtest
 
@@ -418,6 +450,8 @@ function runBacktest(nDraws){
         else if(dk==='cycle')sc=A.numRk.find(r=>r.num===n)?.detail?.cyS||0;
         else if(dk==='bayes')sc=A.numRk.find(r=>r.num===n)?.detail?.byS||0;
         else if(dk==='markov')sc=A.numRk.find(r=>r.num===n)?.detail?.mkS||0;
+        else if(dk==='pair')sc=A.numRk.find(r=>r.num===n)?.detail?.paS||0;
+        else if(dk==='chi')sc=A.numRk.find(r=>r.num===n)?.detail?.chS||0;
         dimRank.push({n,sc});
       }
       dimRank.sort((a,b)=>b.sc-a.sc);
@@ -474,12 +508,12 @@ function renderAll(){
   let added=allData.filter(r=>!INIT_DATA.some(ir=>ir.d===r.d));
   document.getElementById('headerSub').textContent=`共 ${allData.length} 期資料　最新 ${allData[0].d}`+(added.length?`　已新增 +${added.length}`:'');
   document.getElementById('latestBar').innerHTML=`<div class="latest-top"><div class="latest-title">最新開獎</div><div class="latest-date">${allData[0].d}</div></div><div class="latest-balls">${allData[0].n.map(x=>blW(x,42)).join('')}</div><div class="tail-row"><div class="tail-label">尾數 →</div>${A.latT.slice().sort((a,b)=>a-b).map(t=>blWT(t,36)).join('')}</div>`;
-  const tabs=[{k:"recommend",l:"🎯 推薦"},{k:"backtest",l:"📈 回測"},{k:"trans",l:"🔄 轉移"},{k:"nei",l:"👥 鄰號"},{k:"freq",l:"📊 頻率"},{k:"rep",l:"🔁 重複"},{k:"miss",l:"❄️ 遺漏"},{k:"oe",l:"🎲 奇偶"},{k:"struct",l:"📐 結構"},{k:"ml",l:"🤖 ML"},{k:"add",l:"➕ 更新"}];
+  const tabs=[{k:"recommend",l:"🎯 推薦"},{k:"backtest",l:"📈 回測"},{k:"trans",l:"🔄 轉移"},{k:"nei",l:"👥 鄰號"},{k:"freq",l:"📊 頻率"},{k:"rep",l:"🔁 重複"},{k:"miss",l:"❄️ 遺漏"},{k:"oe",l:"🎲 奇偶"},{k:"struct",l:"📐 結構"},{k:"ml",l:"🤖 ML"},{k:"pair",l:"💎 配對"},{k:"chi",l:"📏 卡方"},{k:"add",l:"➕ 更新"}];
   document.getElementById('tabBar').innerHTML=tabs.map(t=>`<button data-tab="${t.k}" class="${curTab===t.k?'on':''}" onclick="switchTab('${t.k}')">${t.l}</button>`).join('');
   renderTab(curTab);
 }
 
-function renderTab(k){let A=analyze(),el=document.getElementById('tab-'+k);if(k==='recommend')renderRec(el,A);else if(k==='backtest')renderBT(el,A);else if(k==='trans')renderTr(el,A);else if(k==='nei')renderNe(el,A);else if(k==='freq')renderFr(el,A);else if(k==='rep')renderRp(el,A);else if(k==='miss')renderMs(el,A);else if(k==='oe')renderOe(el,A);else if(k==='struct')renderStruct(el,A);else if(k==='ml')renderML(el,A);else if(k==='add')renderAd(el);}
+function renderTab(k){let A=analyze(),el=document.getElementById('tab-'+k);if(k==='recommend')renderRec(el,A);else if(k==='backtest')renderBT(el,A);else if(k==='trans')renderTr(el,A);else if(k==='nei')renderNe(el,A);else if(k==='freq')renderFr(el,A);else if(k==='rep')renderRp(el,A);else if(k==='miss')renderMs(el,A);else if(k==='oe')renderOe(el,A);else if(k==='struct')renderStruct(el,A);else if(k==='ml')renderML(el,A);else if(k==='pair')renderPair(el,A);else if(k==='chi')renderChi(el,A);else if(k==='add')renderAd(el);}
 
 /* ═══ BACKTEST TAB ═══ */
 function renderBT(el,A){
@@ -839,6 +873,182 @@ function renderML(el,A){
   const markovHTML=`<div class="card"><div class="card-hd"><h3>🧮 二階馬可夫鏈</h3><p>前兩期尾數→預測下期號碼</p></div><div class="card-bd"><div style="background:rgba(88,86,214,.08);border-radius:12px;padding:10px 14px;margin-bottom:16px;border:1px solid rgba(88,86,214,.2)"><div style="font-size:13px;color:var(--label3)">當前狀態</div><div style="font-size:14px;font-weight:700;color:var(--indigo);margin-top:4px">第1期：${A.D[0].n.map(x=>x%10).sort().join(', ')} ／ 第2期：${A.D[1]?A.D[1].n.map(x=>x%10).sort().join(', '):'—'}</div></div>${mk2Top.map((r,i)=>`<div class="row"><span class="rank-num ${i<3?['rank-1','rank-2','rank-3'][i]:''}">${i<3?['①','②','③'][i]:i+1}</span>${bl(r.n,36)}${br(r.s/m2Mx*100,'var(--indigo)',16)}<span style="font-size:15px;color:var(--label2);font-weight:700;min-width:52px;text-align:right">${r.s.toFixed(1)}%</span></div>`).join('')}</div></div>`;
   const bayesHTML=`<div class="card"><div class="card-hd"><h3>📊 貝氏更新</h3><p>先驗 × 觀測 → 後驗機率</p></div><div class="card-bd">${bayesTop.map((r,i)=>{const hist=(A.cnt[r.n]/(A.L*5)*100).toFixed(1);const rec20=A.D.slice(0,20).filter(d=>d.n.includes(r.n)).length;return`<div style="padding:10px 0;border-bottom:1px solid var(--sep2)"><div class="row" style="margin-bottom:6px"><span class="rank-num ${i<3?['rank-1','rank-2','rank-3'][i]:''}">${i<3?['①','②','③'][i]:i+1}</span>${bl(r.n,36)}${br(r.s/bMx*100,'var(--blue)',16)}<span style="font-size:15px;color:var(--label2);font-weight:700;min-width:44px;text-align:right">${r.s.toFixed(1)}</span></div><div style="padding-left:38px;display:flex;gap:8px"><span class="stat-pill" style="font-size:12px;padding:3px 9px">歷史 ${hist}%</span><span class="stat-pill" style="font-size:12px;padding:3px 9px">近20期 ${rec20}次</span></div></div>`;}).join('')}</div></div>`;
   el.innerHTML=`<div style="padding:16px 16px 0;display:flex;gap:10px">${mBtn}${bBtn}</div><div style="padding-top:6px">${selML==='markov'?markovHTML:bayesHTML}</div>`;
+}
+
+/* ═══ PAIR ANALYSIS TAB ═══ */
+function renderPair(el,A){
+  // Top pairs overall
+  let topP=A.topPairs.slice(0,15);
+  let pMx=topP[0]?topP[0][1]:1;
+  
+  // For latest draw: each number's best partners
+  let latestPairs=A.latest.map(x=>{
+    let partners=[];
+    for(let n=1;n<=39;n++){
+      if(n===x)continue;
+      let k=Math.min(x,n)+'-'+Math.max(x,n);
+      let c=A.pairCnt[k]||0;
+      if(c>0)partners.push({n,c});
+    }
+    partners.sort((a,b)=>b.c-a.c);
+    return{num:x,partners:partners.slice(0,6)};
+  });
+  
+  // Recommended by pair score TOP 10
+  let pairTop=Object.entries(A.pairScore).map(([n,s])=>({n:+n,s})).sort((a,b)=>b.s-a.s).slice(0,10);
+  let ptMx=pairTop[0]?.s||1;
+  
+  el.innerHTML=`
+  <div class="section-hdr">💎 配對分析（雙星組合）</div>
+  <div class="card">
+    <div class="card-hd"><h3>🔥 歷史最強配對 TOP 15</h3><p>近 ${A.L} 期中最常同時開出的號碼組合</p></div>
+    <div class="card-bd">
+      ${topP.map((p,i)=>{
+        let [a,b]=p[0].split('-').map(Number);
+        return`<div class="row">
+          <span class="rank-num ${i<3?['rank-1','rank-2','rank-3'][i]:''}">${i+1}</span>
+          ${bl(a,32)} <span style="font-size:14px;color:var(--label3)">＋</span> ${bl(b,32)}
+          ${br(p[1]/pMx*100,CL[a%10],14)}
+          <span style="font-size:16px;font-weight:800;color:${i<3?'var(--orange)':'var(--label2)'};min-width:48px;text-align:right">${p[1]} 次</span>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>
+  
+  <div class="section-hdr">最新期號碼的最佳拍檔</div>
+  <div class="card">
+    <div class="card-hd"><h3>🤝 每個號碼的歷史搭檔</h3><p>最新期 ${A.latest.join(', ')} 各自最常搭配的號碼</p></div>
+    ${latestPairs.map(lp=>{
+      let pmx=lp.partners[0]?.c||1;
+      return`<div style="padding:14px 20px;border-bottom:1px solid var(--sep2)">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          ${bl(lp.num,40)}<span style="font-size:15px;font-weight:700;color:var(--label)">號碼 ${String(lp.num).padStart(2,'0')} 最常搭配</span>
+        </div>
+        <div style="padding-left:50px">
+          ${lp.partners.map((p,i)=>`<div class="row">
+            <span class="rank-num ${i===0?'rank-1':''}">${i+1}</span>
+            ${bl(p.n,32)}
+            ${br(p.c/pmx*100,CL[p.n%10],12)}
+            <span style="font-size:14px;font-weight:700;color:${i===0?'var(--orange)':'var(--label3)'};min-width:44px;text-align:right">${p.c} 次</span>
+          </div>`).join('')}
+        </div>
+      </div>`;
+    }).join('')}
+  </div>
+  
+  <div class="section-hdr">配對評分 TOP 10（下期推薦）</div>
+  <div class="card">
+    <div class="card-hd"><h3>🎯 與最新期配對最強的號碼</h3><p>綜合與上期5個號碼的歷史同開次數</p></div>
+    <div class="card-bd">
+      ${pairTop.map((r,i)=>`<div class="row">
+        <span class="rank-num ${i<3?['rank-1','rank-2','rank-3'][i]:''}">${i<3?['①','②','③'][i]:i+1}</span>
+        ${bl(r.n,36)}
+        ${br(r.s/ptMx*100,CL[r.n%10],16)}
+        <span style="font-size:16px;font-weight:800;color:var(--label);min-width:48px;text-align:right">${r.s}</span>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+/* ═══ CHI-SQUARE TAB ═══ */
+function renderChi(el,A){
+  let chiEntries=[];
+  for(let n=1;n<=39;n++){
+    let r=A.chiRaw[n];
+    chiEntries.push({n,obs:r.obs,exp:+r.expected,chi2:r.chi2,hot:r.hot,score:A.chiScore[n]});
+  }
+  chiEntries.sort((a,b)=>b.chi2-a.chi2);
+  let chi2Mx=chiEntries[0]?.chi2||1;
+  
+  // Significant hot numbers (chi2 > 3.84 = p<0.05 for df=1, and obs > expected)
+  let sigHot=chiEntries.filter(e=>e.hot&&e.chi2>=3.84);
+  let sigCold=chiEntries.filter(e=>!e.hot&&e.chi2>=3.84);
+  
+  // Score ranking (for recommendation)
+  let chiTop=chiEntries.slice().sort((a,b)=>b.score-a.score).slice(0,10);
+  let csMx=chiTop[0]?.score||1;
+  
+  el.innerHTML=`
+  <div class="section-hdr">📏 卡方檢定（χ²）</div>
+  <div class="card">
+    <div class="card-hd"><h3>📊 統計顯著性分析</h3><p>各號碼實際出現次數 vs 理論期望值 (${A.expected.toFixed(1)} 次)，χ² ≥ 3.84 為顯著 (p&lt;0.05)</p></div>
+    <div class="card-bd">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+        <div style="flex:1;min-width:120px;background:rgba(52,199,89,.1);border:1.5px solid rgba(52,199,89,.4);border-radius:14px;padding:14px;text-align:center">
+          <div style="font-size:12px;color:var(--label3)">顯著偏熱</div>
+          <div style="font-size:28px;font-weight:900;color:var(--green)">${sigHot.length}</div>
+          <div style="font-size:11px;color:var(--label3)">個號碼</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:rgba(255,59,48,.1);border:1.5px solid rgba(255,59,48,.4);border-radius:14px;padding:14px;text-align:center">
+          <div style="font-size:12px;color:var(--label3)">顯著偏冷</div>
+          <div style="font-size:28px;font-weight:900;color:var(--red)">${sigCold.length}</div>
+          <div style="font-size:11px;color:var(--label3)">個號碼</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:var(--bg);border:1.5px solid var(--sep2);border-radius:14px;padding:14px;text-align:center">
+          <div style="font-size:12px;color:var(--label3)">正常範圍</div>
+          <div style="font-size:28px;font-weight:900;color:var(--label2)">${39-sigHot.length-sigCold.length}</div>
+          <div style="font-size:11px;color:var(--label3)">個號碼</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  ${sigHot.length?`<div class="section-hdr">🔥 統計顯著偏熱號碼</div>
+  <div class="card"><div class="card-hd"><h3>出現顯著高於期望</h3><p>χ² ≥ 3.84，實際 &gt; 期望 → 統計上「真熱」</p></div>
+  <div class="card-bd">
+    ${sigHot.sort((a,b)=>b.chi2-a.chi2).map((e,i)=>`<div class="row">
+      <span class="rank-num ${i<3?['rank-1','rank-2','rank-3'][i]:''}">${i+1}</span>
+      ${bl(e.n,34)}
+      <span style="font-size:14px;color:var(--green);font-weight:700;min-width:50px">${e.obs} 次</span>
+      <span style="font-size:12px;color:var(--label3);min-width:60px">期望 ${e.exp.toFixed(1)}</span>
+      ${br(e.chi2/chi2Mx*100,'var(--green)',14)}
+      <span style="font-size:14px;font-weight:800;color:var(--green);min-width:48px;text-align:right">χ²=${e.chi2.toFixed(1)}</span>
+    </div>`).join('')}
+  </div></div>`:``}
+  
+  ${sigCold.length?`<div class="section-hdr">❄️ 統計顯著偏冷號碼</div>
+  <div class="card"><div class="card-hd"><h3>出現顯著低於期望</h3><p>χ² ≥ 3.84，實際 &lt; 期望 → 統計上「真冷」</p></div>
+  <div class="card-bd">
+    ${sigCold.sort((a,b)=>b.chi2-a.chi2).map((e,i)=>`<div class="row">
+      <span class="rank-num">${i+1}</span>
+      ${bl(e.n,34)}
+      <span style="font-size:14px;color:var(--red);font-weight:700;min-width:50px">${e.obs} 次</span>
+      <span style="font-size:12px;color:var(--label3);min-width:60px">期望 ${e.exp.toFixed(1)}</span>
+      ${br(e.chi2/chi2Mx*100,'var(--red)',14)}
+      <span style="font-size:14px;font-weight:800;color:var(--red);min-width:48px;text-align:right">χ²=${e.chi2.toFixed(1)}</span>
+    </div>`).join('')}
+  </div></div>`:``}
+  
+  <div class="section-hdr">卡方評分 TOP 10（下期推薦）</div>
+  <div class="card">
+    <div class="card-hd"><h3>🎯 統計顯著熱號排行</h3><p>偏熱號碼獲得高分，偏冷號碼分數較低</p></div>
+    <div class="card-bd">
+      ${chiTop.map((r,i)=>`<div class="row">
+        <span class="rank-num ${i<3?['rank-1','rank-2','rank-3'][i]:''}">${i<3?['①','②','③'][i]:i+1}</span>
+        ${bl(r.n,36)}
+        ${br(r.score/csMx*100,r.hot?'var(--green)':'var(--red)',16)}
+        <span style="font-size:15px;font-weight:800;color:${r.hot?'var(--green)':'var(--red)'};min-width:52px;text-align:right">${r.score.toFixed(1)}</span>
+      </div>`).join('')}
+    </div>
+  </div>
+  
+  <div class="section-hdr">全部39個號碼 χ² 值</div>
+  <div class="card">
+    <div class="card-hd"><h3>📋 完整卡方統計</h3><p>紅色線=χ²=3.84 顯著門檻</p></div>
+    <div class="card-bd" style="max-height:500px;overflow-y:auto">
+      ${chiEntries.map((e,i)=>{
+        let sig=e.chi2>=3.84;
+        let c=e.hot?(sig?'var(--green)':'var(--label2)'):(sig?'var(--red)':'var(--label3)');
+        return`<div class="row">
+          ${bl(e.n,30)}
+          <span style="font-size:13px;color:${c};font-weight:700;min-width:44px">${e.obs}次</span>
+          ${br(e.chi2/chi2Mx*100,e.hot?'#34c759':'#ff3b30',12)}
+          <span style="font-size:13px;font-weight:${sig?800:500};color:${c};min-width:56px;text-align:right">${e.chi2.toFixed(2)}</span>
+          ${sig?`<span style="font-size:10px;padding:2px 6px;border-radius:6px;font-weight:800;background:${e.hot?'rgba(52,199,89,.12)':'rgba(255,59,48,.1)'};color:${c}">${e.hot?'熱✓':'冷✗'}</span>`:''}
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
 }
 
 function renderAd(el){
