@@ -128,6 +128,7 @@ tr.hl td{font-weight:900;font-size:17px}
 <script>
 /* ═══ DATA ═══ */
 const INIT_DATA=[
+{d:"2026/03/25",n:[3,13,31,33,36]},
 {d:"2026/03/24",n:[10,20,28,29,36]},{d:"2026/03/23",n:[7,12,24,29,35]},
 {d:"2026/03/21",n:[7,14,15,19,22]},{d:"2026/03/20",n:[3,11,15,33,39]},{d:"2026/03/19",n:[5,23,25,30,37]},
 {d:"2026/03/18",n:[21,22,31,32,35]},{d:"2026/03/17",n:[11,13,19,22,27]},
@@ -191,8 +192,8 @@ function bl(v,sz,filled){sz=sz||36;let t=v%10;if(filled)return`<span class="ball
 function blW(v,sz){sz=sz||38;return`<span class="ball" style="width:${sz}px;height:${sz}px;font-size:${sz*.4}px;background:rgba(255,255,255,0.22);color:#fff;border:2px solid rgba(255,255,255,0.55)">${String(v).padStart(2,'0')}</span>`;}
 function blWT(v,sz){sz=sz||34;let t=v%10;return`<span class="ball" style="width:${sz}px;height:${sz}px;font-size:${sz*.44}px;background:rgba(255,255,255,0.92);color:${CL[t]};font-weight:900">${v}</span>`;}
 function br(p,c,h){h=h||16;return`<div class="bar-track" style="height:${h}px"><div class="bar-fill" style="width:${Math.min(p,100)}%;background:${c};height:100%"></div></div>`;}
-function loadData(){try{let s=localStorage.getItem("l539v6");if(s){let d=JSON.parse(s);if(Array.isArray(d)&&d.length>0)return d;}}catch(e){}return null;}
-function saveData(){try{localStorage.setItem("l539v6",JSON.stringify(allData));}catch(e){}}
+function loadData(){try{let s=localStorage.getItem("l539v7");if(s){let d=JSON.parse(s);if(Array.isArray(d)&&d.length>0)return d;}}catch(e){}return null;}
+function saveData(){try{localStorage.setItem("l539v7",JSON.stringify(allData));}catch(e){}}
 
 /* ═══ ANALYSIS (accepts custom data) ═══ */
 function analyze(customData){
@@ -354,9 +355,39 @@ function analyze(customData){
 
   /* ── 綜合評分（使用自適應權重）── */
   let W=getWeights();
+
+  /* ── 新版尾數評分（6維度優化）── */
+  let prevT=new Set(latT);
+  // 尾數連莊率
+  let tailStay=new Array(10).fill(0),tailAppear=new Array(10).fill(0);
+  for(let i=1;i<L;i++){tails[i].forEach(t=>{tailAppear[t]++;if(tails[i-1].includes(t))tailStay[t]++;});}
+  let tailNotApp=new Array(10).fill(0),tailFreshApp=new Array(10).fill(0);
+  for(let i=1;i<L;i++){for(let t=0;t<10;t++){if(!tails[i].includes(t)){tailNotApp[t]++;if(tails[i-1].includes(t))tailFreshApp[t]++;}}}
+  let contScore=new Array(10).fill(0);
+  for(let t=0;t<10;t++){
+    if(prevT.has(t)){contScore[t]=(tailAppear[t]>0?tailStay[t]/tailAppear[t]:0.4)*100;}
+    else{contScore[t]=(tailNotApp[t]>0?tailFreshApp[t]/tailNotApp[t]:0.3)*100;}
+  }
+  let contMx=Math.max(...contScore);let contNorm=contScore.map(s=>contMx>0?s/contMx*100:0);
+  // 尾數遺漏分
+  let tailMissScore=tMiss.map(m=>m===0?30:m===1?50:m===2?75:m>=3?100:60);
+  let tmsMx=Math.max(...tailMissScore);let tmsNorm=tailMissScore.map(s=>tmsMx>0?s/tmsMx*100:0);
+  // 近10期頻率
+  let tr10Mx=Math.max(...tR10);let tr10Norm=tR10.map(s=>tr10Mx>0?s/tr10Mx*100:0);
+  // 反重複因子
+  let antiRep=new Array(10).fill(0);
+  for(let t=0;t<10;t++){
+    if(prevT.has(t)){let rate=tailAppear[t]>0?tailStay[t]/tailAppear[t]:0.4;antiRep[t]=rate<0.40?-20:rate<0.45?-5:10;}
+    else{antiRep[t]=tMiss[t]>=2?15:tMiss[t]>=1?8:0;}
+  }
+  // 連莊長度
+  let tailStreakScore=tStk.map(s=>s===0?60:s===1?70:s===2?50:s>=3?30:40);
+  let tskMx=Math.max(...tailStreakScore);let tskNorm=tailStreakScore.map(s=>tskMx>0?s/tskMx*100:0);
+  // 6維度加權 (回測最佳: 轉移20 連莊15 遺漏15 近10頻15 反重複25 連續10)
+  let TW={tr:.20,cont:.15,miss:.15,r10:.15,anti:.25,streak:.10};
   let tailFinal=new Array(10).fill(0);
-  for(let t=0;t<10;t++)tailFinal[t]=trTailN[t]*W.tr+neiTNorm[t]*W.nei+freqNorm[t]*W.fq+repTNorm[t]*W.rp+missN[t]*W.ms+50*(W.math+W.trend+W.cycle+W.bayes+W.markov+W.pair+W.chi);
-  let tailRk=tailFinal.map((s,i)=>({tail:i,score:s,cnt:tCnt[i],r10:tR10[i],stk:tStk[i],gap:tMiss[i]})).sort((a,b)=>b.score-a.score);
+  for(let t=0;t<10;t++)tailFinal[t]=trTailN[t]*TW.tr+contNorm[t]*TW.cont+tmsNorm[t]*TW.miss+tr10Norm[t]*TW.r10+antiRep[t]*TW.anti+tskNorm[t]*TW.streak;
+  let tailRk=tailFinal.map((s,i)=>({tail:i,score:s,cnt:tCnt[i],r10:tR10[i],stk:tStk[i],gap:tMiss[i],contRate:(tailAppear[i]>0?(tailStay[i]/tailAppear[i]*100).toFixed(0):'--')})).sort((a,b)=>b.score-a.score);
   let numFinal={};
   for(let n=1;n<=39;n++){
     let tS=(trNum[n]||0)*100*W.tr;
@@ -386,6 +417,7 @@ function analyze(customData){
     topAC,topConsec,topSumBin,topSpanBin,
     avgInterval,periodScore,heatScore,consecSc,mk2Score,bayesScore,
     pairScore,pairCnt,topPairs,chiScore,chiRaw,expected,
+    tailStay,tailAppear,contScore,antiRep,TW,
     calcAC,calcSum,calcSpan,calcConsec,calcZone,W};
 }
 
@@ -679,7 +711,7 @@ function renderRec(el,A){
   <div class="section-hdr">推薦尾數 TOP 3</div>
   <div class="card"><div class="card-bd">
     <div class="medal-grid">
-      ${t3.map((t,i)=>`<div class="medal-card"><div class="medal-badge" style="background:${MCOLS[i]}">${MEDALS[i]}</div><div style="font-size:54px;font-weight:900;color:${CL[t.tail]};line-height:1;margin-top:8px">${t.tail}</div><div style="font-size:18px;font-weight:800;color:${CL[t.tail]};margin-top:7px">${t.score.toFixed(1)}</div><div style="font-size:14px;color:var(--label3);margin-top:3px">連莊 ${t.stk} 期</div></div>`).join('')}
+      ${t3.map((t,i)=>`<div class="medal-card"><div class="medal-badge" style="background:${MCOLS[i]}">${MEDALS[i]}</div><div style="font-size:54px;font-weight:900;color:${CL[t.tail]};line-height:1;margin-top:8px">${t.tail}</div><div style="font-size:18px;font-weight:800;color:${CL[t.tail]};margin-top:7px">${t.score.toFixed(1)}</div><div style="font-size:13px;color:var(--label3);margin-top:3px">連莊率 ${t.contRate}%</div></div>`).join('')}
     </div>
     <div style="background:var(--bg);border-radius:14px;padding:16px">
       <div style="font-size:16px;font-weight:800;color:var(--label);margin-bottom:12px">▸ 展開號碼</div>
