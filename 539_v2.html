@@ -129,7 +129,6 @@ tr.hl td{font-weight:900;font-size:17px}
 /* ═══ DATA ═══ */
 const INIT_DATA=[
 {d:"2026/04/07",n:[4,8,21,27,29]},
-{d:"2026/04/07",n:[4,8,21,27,29]},
 {d:"2026/04/06",n:[7,11,17,31,34]},
 {d:"2026/04/04",n:[4,17,25,31,36]},
 {d:"2026/04/03",n:[6,8,9,25,35]},
@@ -1272,23 +1271,23 @@ function renderRec(el,A){
     const latDate=new Date(latest.d.replace(/\//g,'-'));
     const latDow=latDate.getDay();
     
-    return `<div class="section-hdr">📋 最新開獎 + 前期對照</div>
+    return `<div class="section-hdr">📋 當期開獎 + 前期對照</div>
     <div class="card"><div class="card-bd">
       <div style="display:flex;gap:12px;margin-bottom:14px">
         <div style="flex:1;background:var(--blue)10;border-radius:12px;padding:14px">
-          <div style="font-size:12px;color:var(--label3);font-weight:700">最新開獎（${latest.d} 週${DOW_NAME[latDow]}）</div>
+          <div style="font-size:12px;color:var(--label3);font-weight:700">當期開獎（${latest.d} 週${DOW_NAME[latDow]}）</div>
           <div style="margin:8px 0">${latest.n.map(n=>`<span style="display:inline-block;width:36px;height:36px;line-height:36px;text-align:center;border-radius:50%;font-weight:800;font-size:15px;background:${CL[n%10]};color:#fff;margin:2px">${String(n).padStart(2,'0')}</span>`).join('')}</div>
           <div style="font-size:13px;color:var(--label2)">尾數：<strong>${latTails.join(', ')}</strong></div>
         </div>
       </div>
       <div style="display:flex;gap:12px;margin-bottom:0">
         <div style="flex:1;background:var(--bg);border-radius:12px;padding:12px">
-          <div style="font-size:12px;color:var(--label3);font-weight:700">前一期（${prev.d}）</div>
+          <div style="font-size:12px;color:var(--label3);font-weight:700">前一期（${prev.d} 週${DOW_NAME[new Date(prev.d.replace(/\//g,'-')).getDay()]}）</div>
           <div style="margin:6px 0">${prev.n.map(n=>`<span style="display:inline-block;width:30px;height:30px;line-height:30px;text-align:center;border-radius:50%;font-weight:700;font-size:13px;background:var(--bg3);color:var(--label2);margin:1px">${String(n).padStart(2,'0')}</span>`).join('')}</div>
           <div style="font-size:12px;color:var(--label3)">尾數：${prevTails.join(', ')}</div>
         </div>
         <div style="flex:1;background:var(--bg);border-radius:12px;padding:12px">
-          <div style="font-size:12px;color:var(--label3);font-weight:700">前兩期（${prev2.d}）</div>
+          <div style="font-size:12px;color:var(--label3);font-weight:700">前兩期（${prev2.d} 週${DOW_NAME[new Date(prev2.d.replace(/\//g,'-')).getDay()]}）</div>
           <div style="margin:6px 0">${prev2.n.map(n=>`<span style="display:inline-block;width:30px;height:30px;line-height:30px;text-align:center;border-radius:50%;font-weight:700;font-size:13px;background:var(--bg3);color:var(--label3);margin:1px">${String(n).padStart(2,'0')}</span>`).join('')}</div>
           <div style="font-size:12px;color:var(--label3)">尾數：${prev2Tails.join(', ')}</div>
         </div>
@@ -1350,7 +1349,7 @@ function renderRec(el,A){
         <div style="font-size:14px;color:var(--label2);line-height:1.6">
           ${inPref?`✅ 模型推薦的 <strong style="color:${CL[top1tail]}">尾${top1tail}</strong> 在週${DOW_NAME[nextDow]}偏好名單中，信心加持！`:`⚠️ 模型推薦 <strong style="color:${CL[top1tail]}">尾${top1tail}</strong> 不在週${DOW_NAME[nextDow]}偏好中。可考慮改選 <strong style="color:${CL[bestDowTail]}">尾${bestDowTail}</strong>（週${DOW_NAME[nextDow]}最偏好）`}
         </div>
-        <div style="font-size:13px;font-weight:700;color:var(--blue);margin-top:10px;padding:10px;background:var(--blue)08;border-radius:10px;text-align:center">🎯 推薦 2 個尾數 → <strong style="font-size:18px">尾${t3[0].tail}</strong> + <strong style="font-size:18px">尾${t3[1].tail}</strong>（100期回測命中率約68%）</div>
+        <div style="font-size:13px;font-weight:700;color:var(--blue);margin-top:10px;padding:10px;background:var(--blue)08;border-radius:10px;text-align:center">🎯 推薦 2 個尾數 → <strong style="font-size:18px">尾${t3[0].tail}</strong> + <strong style="font-size:18px">尾${t3[1].tail}</strong>（493期回測命中率80.3%）</div>
       </div>`;
     })()}
   </div></div>
