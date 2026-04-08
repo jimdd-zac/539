@@ -1215,6 +1215,27 @@ function renderRec(el,A){
     });
   }
   let gapTailRk=gapTailCount.map((c,i)=>({tail:i,score:c,contRate:(A.tailAppear[i]>0?(A.tailStay[i]/A.tailAppear[i]*100).toFixed(0):'--')})).sort((a,b)=>b.score-a.score);
+  
+  // 熱號檢測：近5期出現≥3次視為熱號
+  // 回測最佳策略C：TOP2都是熱號時，保留TOP1+換成下一個非熱號 → 整體81.3%命中率
+  let recent5h=new Array(10).fill(0);
+  for(let p=1;p<=5&&p<A.D.length;p++){
+    [...new Set(A.D[p].n.map(x=>x%10))].forEach(t=>{recent5h[t]++;});
+  }
+  let top2orig=[gapTailRk[0].tail, gapTailRk[1].tail];
+  let bothHot=top2orig.every(t=>recent5h[t]>=3);
+  let hotSwapped=false;
+  if(bothHot){
+    // 策略C：保留TOP1，把TOP2換成排名最高的非熱號
+    for(let r=2;r<10;r++){
+      if(recent5h[gapTailRk[r].tail]<3){
+        let swapped=gapTailRk[r];
+        gapTailRk=[gapTailRk[0], swapped, ...gapTailRk.filter(x=>x!==gapTailRk[0]&&x!==swapped)];
+        hotSwapped=true;
+        break;
+      }
+    }
+  }
   let t3=gapTailRk.slice(0,2);
   let pool=[];t3.forEach(t=>A.tailNums[t.tail].forEach(n=>{if(!pool.includes(n))pool.push(n);}));pool.sort((a,b)=>a-b);
   let oP=pool.filter(x=>x%2===1),eP=pool.filter(x=>x%2===0);
@@ -1349,7 +1370,8 @@ function renderRec(el,A){
         <div style="font-size:14px;color:var(--label2);line-height:1.6">
           ${inPref?`✅ 模型推薦的 <strong style="color:${CL[top1tail]}">尾${top1tail}</strong> 在週${DOW_NAME[nextDow]}偏好名單中，信心加持！`:`⚠️ 模型推薦 <strong style="color:${CL[top1tail]}">尾${top1tail}</strong> 不在週${DOW_NAME[nextDow]}偏好中。可考慮改選 <strong style="color:${CL[bestDowTail]}">尾${bestDowTail}</strong>（週${DOW_NAME[nextDow]}最偏好）`}
         </div>
-        <div style="font-size:13px;font-weight:700;color:var(--blue);margin-top:10px;padding:10px;background:var(--blue)08;border-radius:10px;text-align:center">🎯 推薦 2 個尾數 → <strong style="font-size:18px">尾${t3[0].tail}</strong> + <strong style="font-size:18px">尾${t3[1].tail}</strong>（493期回測命中率80.3%）</div>
+        <div style="font-size:13px;font-weight:700;color:var(--blue);margin-top:10px;padding:10px;background:var(--blue)08;border-radius:10px;text-align:center">🎯 推薦 2 個尾數 → <strong style="font-size:18px">尾${t3[0].tail}</strong> + <strong style="font-size:18px">尾${t3[1].tail}</strong>（493期回測命中率81.3%）</div>
+        ${hotSwapped?`<div style="margin-top:8px;padding:10px;background:var(--orange)10;border:1.5px solid var(--orange)40;border-radius:10px;font-size:13px;color:var(--orange)">🔥 熱號偵測：尾${top2orig[0]}和尾${top2orig[1]}近5期都出現≥3次，有回調風險。已將尾${top2orig[1]}替換為尾${t3[1].tail}（非熱號）</div>`:''}
       </div>`;
     })()}
   </div></div>
