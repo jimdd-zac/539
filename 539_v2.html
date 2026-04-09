@@ -128,6 +128,8 @@ tr.hl td{font-weight:900;font-size:17px}
 <script>
 /* ═══ DATA ═══ */
 const INIT_DATA=[
+{d:"2026/04/09",n:[2,15,25,31,38]},
+{d:"2026/04/08",n:[2,4,5,6,29]},
 {d:"2026/04/07",n:[4,8,21,27,29]},
 {d:"2026/04/06",n:[7,11,17,31,34]},
 {d:"2026/04/04",n:[4,17,25,31,36]},
@@ -1203,37 +1205,83 @@ function renderBT(el,A){
   </div>`;
 }
 
+/* ═══ 位置規律表：號碼X在第Y支 → 下期最常出現的尾數（≥55%命中率，≥5樣本）═══ */
+const POS_TAIL={'1_1':{t:2,p:58},'3_1':{t:1,p:57},'3_2':{t:8,p:71},'5_2':{t:5,p:56},'6_2':{t:2,p:62},'7_2':{t:7,p:59},'7_3':{t:4,p:75},'8_2':{t:6,p:60},'8_3':{t:9,p:77},'9_1':{t:4,p:59},'9_2':{t:6,p:59},'9_3':{t:7,p:86},'10_1':{t:1,p:80},'10_3':{t:4,p:58},'11_1':{t:5,p:61},'11_2':{t:1,p:57},'12_1':{t:8,p:79},'12_3':{t:6,p:67},'12_4':{t:4,p:63},'13_1':{t:4,p:89},'13_2':{t:4,p:60},'13_4':{t:4,p:83},'14_1':{t:4,p:64},'14_2':{t:5,p:60},'14_3':{t:6,p:64},'14_4':{t:7,p:100},'15_1':{t:7,p:75},'15_2':{t:3,p:63},'15_3':{t:4,p:59},'16_1':{t:2,p:56},'16_2':{t:6,p:73},'16_3':{t:2,p:65},'16_4':{t:7,p:75},'17_1':{t:1,p:80},'17_2':{t:5,p:67},'17_3':{t:5,p:63},'17_4':{t:3,p:56},'18_2':{t:1,p:57},'18_3':{t:1,p:62},'18_4':{t:5,p:62},'19_2':{t:2,p:67},'19_3':{t:4,p:56},'19_4':{t:4,p:65},'20_3':{t:8,p:56},'20_4':{t:8,p:75},'21_2':{t:4,p:58},'21_3':{t:4,p:56},'21_4':{t:7,p:60},'22_2':{t:3,p:65},'22_3':{t:7,p:59},'22_4':{t:5,p:75},'22_5':{t:4,p:63},'23_2':{t:2,p:70},'23_3':{t:3,p:56},'23_4':{t:1,p:61},'23_5':{t:7,p:80},'24_2':{t:8,p:60},'24_3':{t:0,p:59},'24_4':{t:8,p:59},'24_5':{t:9,p:78},'25_2':{t:4,p:71},'25_3':{t:7,p:57},'25_4':{t:2,p:61},'25_5':{t:3,p:80},'26_2':{t:1,p:60},'26_3':{t:4,p:73},'26_4':{t:2,p:56},'26_5':{t:8,p:65},'27_2':{t:4,p:57},'27_3':{t:7,p:63},'27_4':{t:5,p:63},'27_5':{t:1,p:73},'28_3':{t:1,p:65},'28_4':{t:8,p:58},'28_5':{t:8,p:57},'29_3':{t:8,p:60},'29_4':{t:7,p:58},'29_5':{t:1,p:63},'30_3':{t:5,p:67},'30_4':{t:1,p:67},'31_4':{t:1,p:58},'31_5':{t:1,p:57},'32_3':{t:2,p:78},'32_4':{t:6,p:58},'32_5':{t:6,p:56},'33_4':{t:3,p:63},'34_4':{t:8,p:59},'34_5':{t:8,p:57},'36_4':{t:4,p:57},'36_5':{t:2,p:56},'37_4':{t:3,p:67},'37_5':{t:4,p:59},'38_5':{t:5,p:57}};
+
 /* ═══ RENDER RECOMMEND (with backtest summary) ═══ */
 function renderRec(el,A){
   // 隔期次數法：用前1~5期各自的尾數查轉移矩陣，累計次數排名
   let gapTailCount=new Array(10).fill(0);
   for(let g=1;g<=5;g++){
-    let srcIdx=g<A.D.length?g:0;
+    let srcIdx=(g-1)<A.D.length?(g-1):0;
     let srcTails=[...new Set(A.D[srcIdx].n.map(x=>x%10))];
     srcTails.forEach(fr=>{
       for(let to=0;to<10;to++) gapTailCount[to]+=A.tr[g][fr][to];
     });
   }
+  // 位置規律加分：當期號碼的位置匹配高命中率規律時加分
+  let posMatches=[];
+  if(A.D.length>0){
+    let sorted=[...A.D[0].n].sort((a,b)=>a-b);
+    sorted.forEach((num,pos)=>{
+      let key=num+'_'+(pos+1);
+      if(POS_TAIL[key]!==undefined){
+        gapTailCount[POS_TAIL[key].t]+=200;
+        posMatches.push({num,pos:pos+1,tail:POS_TAIL[key].t,pct:POS_TAIL[key].p});
+      }
+    });
+  }
   let gapTailRk=gapTailCount.map((c,i)=>({tail:i,score:c,contRate:(A.tailAppear[i]>0?(A.tailStay[i]/A.tailAppear[i]*100).toFixed(0):'--')})).sort((a,b)=>b.score-a.score);
   
-  // 熱號檢測：近5期出現≥3次視為熱號
-  // 回測最佳策略C：TOP2都是熱號時，保留TOP1+換成下一個非熱號 → 整體81.3%命中率
-  let recent5h=new Array(10).fill(0);
-  for(let p=1;p<=5&&p<A.D.length;p++){
-    [...new Set(A.D[p].n.map(x=>x%10))].forEach(t=>{recent5h[t]++;});
+  // 熱號檢測：計算每個尾數的連開期數
+  // 如果TOP2中任一個連開≥3期且歷史上連開後繼續開的機率<40%，就替換
+  let streak=new Array(10).fill(0);
+  for(let t=0;t<10;t++){
+    for(let i=0;i<A.D.length;i++){
+      if([...new Set(A.D[i].n.map(x=>x%10))].includes(t)) streak[t]++;
+      else break;
+    }
   }
+  // 歷史上各尾數連開N期後繼續開的機率
+  let allTails=A.D.map(r=>[...new Set(r.n.map(x=>x%10))]);
+  function contRate(tail,streakN){
+    let total=0,cont=0;
+    for(let i=1;i<A.D.length-streakN;i++){
+      let allHave=true;
+      for(let k=0;k<streakN;k++){if(!allTails[i+k].includes(tail)){allHave=false;break;}}
+      if(allHave){total++;if(allTails[i-1].includes(tail))cont++;}
+    }
+    return total>=3?cont/total:0.5; // 樣本不足時回傳0.5（不替換）
+  }
+  
   let top2orig=[gapTailRk[0].tail, gapTailRk[1].tail];
-  let bothHot=top2orig.every(t=>recent5h[t]>=3);
   let hotSwapped=false;
-  if(bothHot){
-    // 策略C：保留TOP1，把TOP2換成排名最高的非熱號
-    for(let r=2;r<10;r++){
-      if(recent5h[gapTailRk[r].tail]<3){
-        let swapped=gapTailRk[r];
-        gapTailRk=[gapTailRk[0], swapped, ...gapTailRk.filter(x=>x!==gapTailRk[0]&&x!==swapped)];
-        hotSwapped=true;
-        break;
+  let hotSwapMsg='';
+  
+  // 檢查TOP2中哪個連開≥3期且歷史繼續率<40%
+  let hotIdx=-1;
+  let top2streaks=top2orig.map((t,i)=>({idx:i,tail:t,streak:streak[t],rate:contRate(t,streak[t])}));
+  // 優先換掉連開更長、繼續率更低的
+  top2streaks.sort((a,b)=>a.rate-b.rate);
+  for(let s of top2streaks){
+    if(s.streak>=3 && s.rate<0.40){
+      hotIdx=s.idx;
+      // 從排名第3開始找一個連開<3期或繼續率≥40%的替補
+      for(let r=2;r<10;r++){
+        let rt=gapTailRk[r].tail;
+        let rs=streak[rt];
+        let rr=rs>=3?contRate(rt,rs):0.5;
+        if(rs<3 || rr>=0.40){
+          let keep=hotIdx===0?gapTailRk[1]:gapTailRk[0];
+          let swapped=gapTailRk[r];
+          if(hotIdx===0) gapTailRk=[swapped, keep, ...gapTailRk.filter(x=>x!==keep&&x!==swapped)];
+          else gapTailRk=[keep, swapped, ...gapTailRk.filter(x=>x!==keep&&x!==swapped)];
+          hotSwapped=true;
+          hotSwapMsg=`尾${s.tail}已連開${s.streak}期（歷史繼續率${(s.rate*100).toFixed(0)}%），有回調風險。已替換為尾${rt}`;
+          break;
+        }
       }
+      break;
     }
   }
   let t3=gapTailRk.slice(0,2);
@@ -1370,8 +1418,9 @@ function renderRec(el,A){
         <div style="font-size:14px;color:var(--label2);line-height:1.6">
           ${inPref?`✅ 模型推薦的 <strong style="color:${CL[top1tail]}">尾${top1tail}</strong> 在週${DOW_NAME[nextDow]}偏好名單中，信心加持！`:`⚠️ 模型推薦 <strong style="color:${CL[top1tail]}">尾${top1tail}</strong> 不在週${DOW_NAME[nextDow]}偏好中。可考慮改選 <strong style="color:${CL[bestDowTail]}">尾${bestDowTail}</strong>（週${DOW_NAME[nextDow]}最偏好）`}
         </div>
-        <div style="font-size:13px;font-weight:700;color:var(--blue);margin-top:10px;padding:10px;background:var(--blue)08;border-radius:10px;text-align:center">🎯 推薦 2 個尾數 → <strong style="font-size:18px">尾${t3[0].tail}</strong> + <strong style="font-size:18px">尾${t3[1].tail}</strong>（493期回測命中率81.3%）</div>
-        ${hotSwapped?`<div style="margin-top:8px;padding:10px;background:var(--orange)10;border:1.5px solid var(--orange)40;border-radius:10px;font-size:13px;color:var(--orange)">🔥 熱號偵測：尾${top2orig[0]}和尾${top2orig[1]}近5期都出現≥3次，有回調風險。已將尾${top2orig[1]}替換為尾${t3[1].tail}（非熱號）</div>`:''}
+        <div style="font-size:13px;font-weight:700;color:var(--blue);margin-top:10px;padding:10px;background:var(--blue)08;border-radius:10px;text-align:center">🎯 推薦 2 個尾數 → <strong style="font-size:18px">尾${t3[0].tail}</strong> + <strong style="font-size:18px">尾${t3[1].tail}</strong>（495期回測命中率85.1%）</div>
+        ${hotSwapped?`<div style="margin-top:8px;padding:10px;background:var(--orange)10;border:1.5px solid var(--orange)40;border-radius:10px;font-size:13px;color:var(--orange)">🔥 ${hotSwapMsg}</div>`:''}
+        ${posMatches.length>0?`<div style="margin-top:8px;padding:10px;background:var(--purple)10;border:1.5px solid var(--purple)40;border-radius:10px;font-size:13px;color:var(--purple)">📍 位置規律加分：${posMatches.map(p=>`${String(p.num).padStart(2,'0')}號在第${p.pos}支→尾${p.tail}(${p.pct}%)`).join('、')}</div>`:''}
       </div>`;
     })()}
   </div></div>
@@ -1415,7 +1464,7 @@ function calcNumTrans(D, gap){
 function renderTr(el,A){
   const gB=[1,2,3,4,5].map(g=>`<button class="btn-gap ${selGap===g?'on':''}" onclick="selGap=${g};renderTab('trans')">隔 ${g} 期</button>`).join('');
   // 隔N期：要用前N期的尾數/號碼來預測下一期
-  const srcIdx=selGap; // 用第N期的資料（D[0]=最新,D[1]=前一期...）
+  const srcIdx=Math.max(0,selGap-1); // 用第N期的資料（D[0]=最新,D[1]=前一期...）
   const srcDraw=A.D[srcIdx]||A.D[0];
   const srcTails=[...new Set(srcDraw.n.map(x=>x%10))].sort((a,b)=>a-b);
   const srcDate=srcDraw.d;
@@ -1504,7 +1553,7 @@ function renderTr(el,A){
   
   ${(()=>{
     // 顯示「隔N期」對應的來源期
-    const srcIdx=selGap; // 隔1期→用前1期, 隔2期→用前2期
+    const srcIdx=Math.max(0,selGap-1); // 隔1期→用前1期, 隔2期→用前2期
     if(srcIdx>=A.D.length) return '';
     const srcDraw=A.D[srcIdx];
     const srcDate=new Date(srcDraw.d.replace(/\//g,'-'));
@@ -1554,7 +1603,7 @@ function renderTr(el,A){
   <div class="section-hdr">尾數轉移</div>
   <div class="card"><div class="card-hd"><h3>🔄 尾數轉移</h3><p>${(()=>{const si=selGap;if(si<A.D.length){return A.D[si].d+'的尾數，隔'+selGap+'期後最常出現的尾數';}return '最新期各尾數，隔 '+selGap+' 期後最常出現的尾數';})()}</p></div>${(()=>{
     // 用正確的來源期的尾數（隔N期→用前N期）
-    const srcIdx2=selGap<A.D.length?selGap:0;
+    const srcIdx2=Math.max(0,selGap-1)<A.D.length?Math.max(0,selGap-1):0;
     const srcTails2=[...new Set(A.D[srcIdx2].n.map(x=>x%10))].sort();
     return srcTails2.map(fr=>{
       const row=A.tr[selGap][fr].map((c,to)=>({to,c})).sort((a,b)=>b.c-a.c);
@@ -1568,7 +1617,7 @@ function renderTr(el,A){
   <div class="section-hdr">號碼轉移</div>
   <div class="card"><div class="card-hd"><h3>🎯 號碼轉移</h3><p>${(()=>{const si=selGap;if(si<A.D.length){return A.D[si].d+'的號碼，隔'+selGap+'期後最常出現的號碼';}return '最新期各號碼，隔 '+selGap+' 期後最常跟著出現的號碼';})()}</p></div>${(()=>{
     // 用正確的來源期號碼
-    const srcIdx3=selGap<A.D.length?selGap:0;
+    const srcIdx3=Math.max(0,selGap-1)<A.D.length?Math.max(0,selGap-1):0;
     const srcNums=A.D[srcIdx3].n;
     const {cnt:cntSrc, total:totalSrc}=calcNumTrans(A.D, selGap);
     return srcNums.map(fr=>{
@@ -1609,7 +1658,7 @@ function renderTr(el,A){
     // 對每個gap(1~5)，用正確來源期的尾數，累計帶出的尾數「次數」
     let tailCount=new Array(10).fill(0);
     for(let g=1;g<=5;g++){
-      const srcIdx=g<A.D.length?g:0;
+      const srcIdx=(g-1)<A.D.length?(g-1):0;
       const srcTails=[...new Set(A.D[srcIdx].n.map(x=>x%10))];
       srcTails.forEach(fr=>{
         const tot=A.trT[g][fr]||1;
