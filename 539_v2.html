@@ -128,6 +128,8 @@ tr.hl td{font-weight:900;font-size:17px}
 <script>
 /* ═══ DATA ═══ */
 const INIT_DATA=[
+{d:"2026/04/11",n:[7,12,17,24,31]},
+{d:"2026/04/10",n:[9,21,25,27,30]},
 {d:"2026/04/09",n:[2,15,25,31,38]},
 {d:"2026/04/08",n:[2,4,5,6,29]},
 {d:"2026/04/07",n:[4,8,21,27,29]},
@@ -1084,7 +1086,7 @@ function renderAll(){
   let added=allData.filter(r=>!INIT_DATA.some(ir=>ir.d===r.d));
   document.getElementById('headerSub').textContent=`共 ${allData.length} 期資料　最新 ${allData[0].d}`+(added.length?`　已新增 +${added.length}`:'');
   document.getElementById('latestBar').innerHTML=`<div class="latest-top"><div class="latest-title">最新開獎</div><div class="latest-date">${allData[0].d}</div></div><div class="latest-balls">${allData[0].n.map(x=>blW(x,42)).join('')}</div><div class="tail-row"><div class="tail-label">尾數 →</div>${A.latT.slice().sort((a,b)=>a-b).map(t=>blWT(t,36)).join('')}</div>`;
-  const tabs=[{k:"recommend",l:"🎯 推薦"},{k:"backtest",l:"📈 回測"},{k:"trans",l:"🔄 轉移"},{k:"nei",l:"👥 鄰號"},{k:"freq",l:"📊 頻率"},{k:"rep",l:"🔁 重複"},{k:"miss",l:"❄️ 遺漏"},{k:"oe",l:"🎲 奇偶"},{k:"struct",l:"📐 結構"},{k:"ml",l:"🤖 ML"},{k:"pair",l:"💎 配對"},{k:"chi",l:"📏 卡方"},{k:"add",l:"➕ 更新"}];
+  const tabs=[{k:"recommend",l:"🎯 推薦"},{k:"trans",l:"🔄 轉移"},{k:"oe",l:"🎲 奇偶"},{k:"backtest",l:"📈 回測"},{k:"nei",l:"👥 鄰號"},{k:"freq",l:"📊 頻率"},{k:"rep",l:"🔁 重複"},{k:"miss",l:"❄️ 遺漏"},{k:"struct",l:"📐 結構"},{k:"ml",l:"🤖 ML"},{k:"pair",l:"💎 配對"},{k:"chi",l:"📏 卡方"},{k:"add",l:"➕ 更新"}];
   document.getElementById('tabBar').innerHTML=tabs.map(t=>`<button data-tab="${t.k}" class="${curTab===t.k?'on':''}" onclick="switchTab('${t.k}')">${t.l}</button>`).join('');
   renderTab(curTab);
 }
@@ -1707,6 +1709,153 @@ function renderOe(el,A){
   const recent10=A.D.slice(0,10);const recOE={};
   recent10.forEach(r=>{const od=r.n.filter(x=>x%2===1).length;recOE[od+'單'+(5-od)+'雙']=(recOE[od+'單'+(5-od)+'雙']||0)+1;});
   const recTop=Object.entries(recOE).sort((a,b)=>b[1]-a[1]);
+  
+  // ═══ 隔期奇偶預測（位置奇偶模式+星期偏好，回測61.2%）═══
+  let oePredHTML='';
+  if(A.D.length>=2){
+    const prevDraw=A.D[0]; // 最新一期
+    const sorted=[...prevDraw.n].sort((a,b)=>a-b);
+    const srcOddCnt=sorted.filter(n=>n%2===1).length;
+    const posKey=sorted.map(n=>n%2).join('');
+    
+    // ═══ 組合投票法（A×2+B+D，回測62.7%）═══
+    // 方法A：位置奇偶模式轉移
+    let totalSamples=0;
+    let aOeCounts=[0,0,0,0,0,0];
+    for(let i=1;i<A.D.length;i++){
+      const s=[...A.D[i].n].sort((a,b)=>a-b);
+      if(s.filter(n=>n%2===1).length===srcOddCnt){
+        totalSamples++;
+        aOeCounts[A.D[i-1].n.filter(x=>x%2===1).length]++;
+      }
+    }
+    const aVote3=aOeCounts[3]>aOeCounts[2]?1:aOeCounts[2]>aOeCounts[3]?-1:0;
+    
+    // 方法B：隔期次數法+位置規律TOP2尾數展開號碼奇偶比
+    let tailCountOE=new Array(10).fill(0);
+    for(let g=1;g<=5;g++){
+      let srcIdx=g-1;
+      if(srcIdx>=A.D.length) continue;
+      let srcTails=[...new Set(A.D[srcIdx].n.map(x=>x%10))];
+      srcTails.forEach(fr=>{
+        for(let to=0;to<10;to++) tailCountOE[to]+=(A.tr[g]&&A.tr[g][fr]?A.tr[g][fr][to]:0);
+      });
+    }
+    if(A.D.length>0){
+      let s2=[...A.D[0].n].sort((a,b)=>a-b);
+      s2.forEach((num,pos)=>{
+        let key=num+'_'+(pos+1);
+        if(POS_TAIL[key]!==undefined) tailCountOE[POS_TAIL[key].t]+=200;
+      });
+    }
+    let rankedOE=tailCountOE.map((c,i)=>({t:i,c})).sort((a,b)=>b.c-a.c);
+    let top2OE=[rankedOE[0].t, rankedOE[1].t];
+    let poolB=[];
+    top2OE.forEach(tail=>{for(let n=1;n<=39;n++) if(n%10===tail) poolB.push(n);});
+    let oddB=poolB.filter(n=>n%2===1).length;
+    let evenB=poolB.filter(n=>n%2===0).length;
+    const bVote3=oddB>evenB?1:evenB>oddB?-1:0;
+    
+    // 方法D：隔期尾數奇偶加權
+    let oddTS=0,evenTS=0;
+    for(let tail=0;tail<10;tail++){if(tail%2===1) oddTS+=tailCountOE[tail];else evenTS+=tailCountOE[tail];}
+    const dVote3=oddTS>evenTS?1:evenTS>oddTS?-1:0;
+    
+    // 投票：A×2 + B + D
+    const totalVote=aVote3*2+bVote3+dVote3;
+    
+    // 基礎：用位置模式的歷史分布
+    const cntTotal=aOeCounts.reduce((a,b)=>a+b,0);
+    const cnt3o2e=aOeCounts[3];
+    const cnt2o3e=aOeCounts[2];
+    const cntTarget=cnt3o2e+cnt2o3e;
+    const cnt4o1e=aOeCounts[4];
+    const cnt1o4e=aOeCounts[1];
+    const cnt5o0e=aOeCounts[5];
+    const cnt0o5e=aOeCounts[0];
+    
+    const pctTarget=cntTotal>0?(cntTarget/cntTotal*100).toFixed(1):'65.0';
+    const pct3o2e=cntTotal>0?(cnt3o2e/cntTotal*100).toFixed(1):'33';
+    const pct2o3e=cntTotal>0?(cnt2o3e/cntTotal*100).toFixed(1):'33';
+    const pct4o1e=cntTotal>0?(cnt4o1e/cntTotal*100).toFixed(1):'0';
+    const pct1o4e=cntTotal>0?(cnt1o4e/cntTotal*100).toFixed(1):'0';
+    const pct5o0e=cntTotal>0?(cnt5o0e/cntTotal*100).toFixed(1):'0';
+    const pct0o5e=cntTotal>0?(cnt0o5e/cntTotal*100).toFixed(1):'0';
+    
+    const votePred=totalVote>0?'偏3單2雙':totalVote<0?'偏2單3雙':'持平';
+    const voteColor=totalVote>0?'var(--orange)':totalVote<0?'var(--purple)':'var(--label3)';
+    const voteStrength=Math.abs(totalVote);
+    const voteDesc=voteStrength>=3?'強烈':voteStrength>=2?'明確':voteStrength>=1?'微幅':'無';
+    
+    const latDate=new Date(A.D[0].d.replace(/\//g,'-'));
+    let nextDow=latDate.getDay()===6?1:latDate.getDay()+1;
+    if(nextDow===0) nextDow=1;
+    const DOW_N2=['日','一','二','三','四','五','六'];
+    let dowCounts=[0,0,0,0,0,0];
+    for(let i=0;i<A.D.length;i++){
+      const d=new Date(A.D[i].d.replace(/\//g,'-')).getDay();
+      if(d===nextDow) dowCounts[A.D[i].n.filter(x=>x%2===1).length]++;
+    }
+    const dowTotal2=dowCounts.reduce((a,b)=>a+b,0);
+    const dowTarget=dowTotal2>0?((dowCounts[3]+dowCounts[2])/dowTotal2*100).toFixed(0):'--';
+    
+    const recent5OE=A.D.slice(0,5).map(r=>{const od=r.n.filter(x=>x%2===1).length;return{d:r.d,odd:od,even:5-od,label:od+'單'+(5-od)+'雙'};});
+    
+    const nextDateObj=new Date(latDate);
+    nextDateObj.setDate(nextDateObj.getDate()+(latDate.getDay()===6?2:1));
+    const nextDateStr=(nextDateObj.getMonth()+1)+'/'+nextDateObj.getDate();
+    
+    oePredHTML=`
+    <div class="section-hdr">🔮 下一期單雙預測（${nextDateStr} 週${DOW_N2[nextDow]}）</div>
+    <div class="card"><div class="card-bd">
+      <div style="background:var(--green)10;border:2px solid var(--green)50;border-radius:16px;padding:20px;text-align:center;margin-bottom:16px">
+        <div style="font-size:14px;color:var(--label3);margin-bottom:4px">3單2雙 或 2單3雙</div>
+        <div style="font-size:42px;font-weight:900;color:var(--green)">${pctTarget}%</div>
+        <div style="font-size:13px;color:var(--label3)">${cntTarget}/${cntTotal}次（同模式歷史統計）</div>
+        <div style="display:flex;justify-content:center;gap:16px;margin-top:10px">
+          <span style="font-size:13px;color:var(--orange);font-weight:700">3單2雙 ${pct3o2e}%</span>
+          <span style="font-size:13px;color:var(--purple);font-weight:700">2單3雙 ${pct2o3e}%</span>
+        </div>
+      </div>
+      ${totalVote!==0?`<div style="background:${voteColor}10;border:1.5px solid ${voteColor}40;border-radius:12px;padding:12px;text-align:center;margin-bottom:14px">
+        <span style="font-size:15px;font-weight:800;color:${voteColor}">投票預測：${voteDesc}${votePred}</span>
+        <span style="font-size:12px;color:var(--label3);margin-left:6px">（回測62.7%）</span>
+        <div style="display:flex;justify-content:center;gap:12px;margin-top:8px;font-size:12px;color:var(--label3)">
+          <span>A位置模式×2：${aVote3>0?'3單':'2單'}</span>
+          <span>B隔期尾數：${bVote3>0?'3單':bVote3<0?'2單':'平'}</span>
+          <span>D奇偶加權：${dVote3>0?'3單':dVote3<0?'2單':'平'}</span>
+        </div>
+      </div>`:''}
+      <div style="font-size:14px;font-weight:700;color:var(--label3);margin-bottom:8px">其他組合機率</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+        <div style="flex:1;min-width:70px;background:var(--bg);border-radius:10px;padding:10px;text-align:center;border:1px solid var(--sep2)">
+          <div style="font-size:12px;color:var(--label3)">4單1雙</div>
+          <div style="font-size:18px;font-weight:800;color:var(--label2)">${pct4o1e}%</div>
+          <div style="font-size:11px;color:var(--label3)">${cnt4o1e}次</div>
+        </div>
+        <div style="flex:1;min-width:70px;background:var(--bg);border-radius:10px;padding:10px;text-align:center;border:1px solid var(--sep2)">
+          <div style="font-size:12px;color:var(--label3)">1單4雙</div>
+          <div style="font-size:18px;font-weight:800;color:var(--label2)">${pct1o4e}%</div>
+          <div style="font-size:11px;color:var(--label3)">${cnt1o4e}次</div>
+        </div>
+        <div style="flex:1;min-width:70px;background:var(--bg);border-radius:10px;padding:10px;text-align:center;border:1px solid var(--sep2)">
+          <div style="font-size:12px;color:var(--label3)">5單0雙</div>
+          <div style="font-size:18px;font-weight:800;color:var(--label2)">${pct5o0e}%</div>
+          <div style="font-size:11px;color:var(--label3)">${cnt5o0e}次</div>
+        </div>
+        <div style="flex:1;min-width:70px;background:var(--bg);border-radius:10px;padding:10px;text-align:center;border:1px solid var(--sep2)">
+          <div style="font-size:12px;color:var(--label3)">0單5雙</div>
+          <div style="font-size:18px;font-weight:800;color:var(--label2)">${pct0o5e}%</div>
+          <div style="font-size:11px;color:var(--label3)">${cnt0o5e}次</div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--label3);margin-bottom:6px">📊 週${DOW_N2[nextDow]}歷史 3單2雙+2單3雙：${dowTarget}%</div>
+      <div style="font-size:12px;color:var(--label3);margin-bottom:6px">📍 位置模式 [${posKey.split('').map(x=>x==='1'?'奇':'偶').join(',')}]（${totalSamples}樣本）</div>
+      <div style="font-size:12px;color:var(--label3);margin-bottom:6px">🎯 推薦尾數 TOP2：尾${top2OE[0]}、尾${top2OE[1]} → 號碼池奇${oddB}偶${evenB}</div>
+      <div style="font-size:12px;color:var(--label3)">近5期：${recent5OE.map(r=>`<span style="display:inline-block;padding:2px 8px;border-radius:8px;margin:1px;font-weight:600;background:${r.odd===3||r.odd===2?'var(--green)10':'var(--bg)'};color:${r.odd===3?'var(--orange)':r.odd===2?'var(--purple)':'var(--label3)'}">${r.label}</span>`).join('')}</div>
+    </div></div>`;
+  }
+
   const tailRk3=A.tailRk.slice(0,2);let trPool=[];
   tailRk3.forEach(t=>A.tailNums[t.tail].forEach(n=>{if(!trPool.includes(n))trPool.push(n);}));
   const trOdd=trPool.filter(n=>n%2===1).length;const trTotal=trPool.length||1;
@@ -1723,6 +1872,7 @@ function renderOe(el,A){
   const lastOdd=A.latest.filter(n=>n%2===1).length;const lastCombo=lastOdd+'單'+(5-lastOdd)+'雙';
   const methods=[{name:'轉移尾數',exp:(trOdd/trTotal*5),w:'20%'},{name:'綜合推薦TOP10',exp:top10expOdd,w:'15%'},{name:'鄰號分析',exp:neiExpOdd,w:'10%'},{name:'遺漏追蹤',exp:missExpOdd,w:'10%'}];
   el.innerHTML=`
+  ${oePredHTML}
   <div class="section-hdr">🔮 下一期單雙組合推薦</div>
   <div class="card"><div class="card-hd"><h3>六維度綜合評分</h3><p>歷史25% ＋ 近10期20% ＋ 轉移20% ＋ 推薦TOP10吻合15% ＋ 鄰號10% ＋ 遺漏10%</p></div>
   <div class="card-bd">${sortedCombos.map((k,i)=>{const od=parseInt(k[0]);const sc=scores[k];const hist=histPct[k];const rec=recOE[k]||0;const isTop=i===0;const isTop2=i<=1;return`<div style="padding:14px 0;border-bottom:1px solid var(--sep2)"><div class="row" style="margin-bottom:8px"><span class="rank-num ${i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':''}">${i===0?'①':i===1?'②':i===2?'③':i+1}</span><span style="font-size:${isTop?'21px':'17px'};font-weight:${isTop?900:700};color:${isTop?'var(--label)':'var(--label2)'};min-width:80px">${k}</span>${br(sc/maxScore*100,isTop?'var(--orange)':isTop2?'var(--blue)':'var(--bg3)',isTop?22:16)}<span style="font-size:${isTop?'18px':'15px'};font-weight:${isTop?800:600};color:${isTop?'var(--orange)':'var(--label3)'};min-width:44px;text-align:right">${sc.toFixed(1)}</span></div><div style="padding-left:38px;display:flex;gap:8px;flex-wrap:wrap"><span class="stat-pill" style="font-size:12px;padding:4px 10px">歷史 ${hist.toFixed(0)}%</span><span class="stat-pill" style="font-size:12px;padding:4px 10px">近10期 ${rec}次</span>${isTop?`<span style="font-size:13px;font-weight:700;color:var(--green);background:rgba(52,199,89,.12);padding:4px 12px;border-radius:20px">✓ 推薦</span>`:''}</div></div>`;}).join('')}</div></div>
