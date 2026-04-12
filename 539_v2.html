@@ -1372,7 +1372,7 @@ function renderRec(el,A){
       ${t3.map((t,i)=>`<div class="medal-card"><div class="medal-badge" style="background:${MCOLS[i]}">${MEDALS[i]}</div><div style="font-size:54px;font-weight:900;color:${CL[t.tail]};line-height:1;margin-top:8px">${t.tail}</div><div style="font-size:18px;font-weight:800;color:${CL[t.tail]};margin-top:7px">${t.score} 次</div><div style="font-size:13px;color:var(--label3);margin-top:3px">連莊率 ${t.contRate}%</div></div>`).join('')}
     </div>
     <div style="background:var(--bg);border-radius:14px;padding:16px">
-      <div style="font-size:16px;font-weight:800;color:var(--label);margin-bottom:12px">▸ 展開號碼</div>
+      <div style="font-size:16px;font-weight:800;color:var(--label);margin-bottom:12px">▸ 展開號碼 <span style="font-size:11px;font-weight:500;color:var(--label3)">（色框＝綜合排名前8）</span></div>
       ${t3.map(t=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">${bl(t.tail,36,true)}<span style="font-size:18px;color:var(--label3)">→</span>${A.tailNums[t.tail].map(n=>{let hi=topIdx.indexOf(n)<8;return`<span class="num-chip" style="background:${hi?CL[n%10]+'18':'var(--bg3)'};color:${hi?CL[n%10]:'var(--label3)'};border:${hi?'2px solid '+CL[n%10]+'60':'none'}">${String(n).padStart(2,'0')}</span>`;}).join('')}</div>`).join('')}
     </div>
     ${(()=>{
