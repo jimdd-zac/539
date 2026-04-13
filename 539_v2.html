@@ -1956,92 +1956,196 @@ function renderOe(el,A){
     </div></div>`;
   }
 
-  // ═══ 哪一尾最容易重複 ═══
+  // ═══ 哪一尾最容易重複（全期統計+隔期法+星期偏好）═══
   let dupTailHTML='';
   if(A.D.length>=2){
-    const prevTails3=A.D[0].n.map(x=>x%10);
-    const prevCount={};
-    prevTails3.forEach(t=>prevCount[t]=(prevCount[t]||0)+1);
-    const dupTails=Object.entries(prevCount).filter(([t,c])=>c>=2).map(([t])=>+t);
-    
     const latDate3=new Date(A.D[0].d.replace(/\//g,'-'));
     let nextDow3=latDate3.getDay()===6?1:latDate3.getDay()+1;
     if(nextDow3===0) nextDow3=1;
     const DOW_N4=['日','一','二','三','四','五','六'];
     
-    // 條件查詢：前期有特定尾數重複 + 下期星期X → 下期哪尾重複
-    let condDup=new Array(10).fill(0);
-    let condTotal=0,condNoDup=0;
-    
-    if(dupTails.length>0){
-      // 用第一個重複尾數做條件
-      const dupTail=dupTails[0];
-      for(let i=1;i<A.D.length;i++){
-        const pc={};A.D[i].n.map(x=>x%10).forEach(t=>pc[t]=(pc[t]||0)+1);
-        const nd=new Date(A.D[i-1].d.replace(/\//g,'-')).getDay();
-        if(pc[dupTail]>=2 && nd===nextDow3){
-          condTotal++;
-          const nc={};A.D[i-1].n.map(x=>x%10).forEach(t=>nc[t]=(nc[t]||0)+1);
-          let hasDup=false;
-          Object.entries(nc).forEach(([t,c])=>{if(c>=2){condDup[+t]++;hasDup=true;}});
-          if(!hasDup) condNoDup++;
-        }
-      }
-      // 如果樣本不足，退回到只看有任何重複尾數
-      if(condTotal<5){
-        condDup=new Array(10).fill(0);condTotal=0;condNoDup=0;
-        for(let i=1;i<A.D.length;i++){
-          const pc={};A.D[i].n.map(x=>x%10).forEach(t=>pc[t]=(pc[t]||0)+1);
-          const hasPDup=Object.values(pc).some(c=>c>=2);
-          const nd=new Date(A.D[i-1].d.replace(/\//g,'-')).getDay();
-          if(hasPDup && nd===nextDow3){
-            condTotal++;
-            const nc={};A.D[i-1].n.map(x=>x%10).forEach(t=>nc[t]=(nc[t]||0)+1);
-            let hasDup=false;
-            Object.entries(nc).forEach(([t,c])=>{if(c>=2){condDup[+t]++;hasDup=true;}});
-            if(!hasDup) condNoDup++;
-          }
-        }
-      }
-    } else {
-      // 當期無重複 → 查前期無重複+下期星期X
-      for(let i=1;i<A.D.length;i++){
-        const pUniq=new Set(A.D[i].n.map(x=>x%10)).size===5;
-        const nd=new Date(A.D[i-1].d.replace(/\//g,'-')).getDay();
-        if(pUniq && nd===nextDow3){
-          condTotal++;
-          const nc={};A.D[i-1].n.map(x=>x%10).forEach(t=>nc[t]=(nc[t]||0)+1);
-          let hasDup=false;
-          Object.entries(nc).forEach(([t,c])=>{if(c>=2){condDup[+t]++;hasDup=true;}});
-          if(!hasDup) condNoDup++;
-        }
+    // ── 全期統計：該星期幾各尾數重複次數 ──
+    let dowDupAll=new Array(10).fill(0);
+    let dowTotalAll=0,dowNoDupAll=0;
+    for(let i=0;i<A.D.length;i++){
+      const nd=new Date(A.D[i].d.replace(/\//g,'-')).getDay();
+      if(nd===nextDow3){
+        dowTotalAll++;
+        const nc={};A.D[i].n.map(x=>x%10).forEach(t=>nc[t]=(nc[t]||0)+1);
+        let hasDup=false;
+        Object.entries(nc).forEach(([t,c])=>{if(c>=2){dowDupAll[+t]++;hasDup=true;}});
+        if(!hasDup) dowNoDupAll++;
       }
     }
     
-    // 排名
-    const dupRk=condDup.map((c,i)=>({t:i,c,pct:condTotal>0?(c/condTotal*100).toFixed(0):'0'}))
-      .sort((a,b)=>b.c-a.c).filter(r=>r.c>0);
-    
-    if(condTotal>=3){
-      const curDupLabel=dupTails.length>0?`尾${dupTails.join('、')}重複`:'全不同';
-      dupTailHTML=`
-      <div class="section-hdr">🎯 下一期最可能重複的尾數（週${DOW_N4[nextDow3]}）</div>
-      <div class="card"><div class="card-bd">
-        <div style="font-size:12px;color:var(--label3);margin-bottom:12px">條件：當期${curDupLabel} + 下期週${DOW_N4[nextDow3]}（${condTotal}樣本）</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-          ${dupRk.slice(0,5).map((r,i)=>`<div style="flex:1;min-width:55px;background:${i===0?'var(--red)10':'var(--bg)'};border:${i===0?'2px solid var(--red)50':'1px solid var(--sep2)'};border-radius:12px;padding:12px 8px;text-align:center">
-            <div style="font-size:22px;font-weight:900;color:${i===0?'var(--red)':'var(--label2)'}">尾${r.t}</div>
-            <div style="font-size:16px;font-weight:800;color:${i===0?'var(--red)':'var(--label3)'}">${r.pct}%</div>
-            <div style="font-size:11px;color:var(--label3)">${r.c}次</div>
-          </div>`).join('')}
-        </div>
-        <div style="background:var(--bg);border-radius:10px;padding:10px;text-align:center;border:1px solid var(--sep2)">
-          <span style="font-size:13px;color:var(--label3)">無重複：</span>
-          <span style="font-size:15px;font-weight:800;color:var(--teal)">${condTotal>0?(condNoDup/condTotal*100).toFixed(0):'--'}%</span>
-          <span style="font-size:12px;color:var(--label3)">（${condNoDup}次）</span>
-        </div>
-      </div></div>`;
+    // ── 隔期次數法+位置規律 ──
+    let gapTC=new Array(10).fill(0);
+    for(let g=1;g<=5;g++){
+      let srcIdx=g-1;
+      if(srcIdx>=A.D.length) continue;
+      let srcTails=[...new Set(A.D[srcIdx].n.map(x=>x%10))];
+      srcTails.forEach(fr=>{
+        for(let to=0;to<10;to++) gapTC[to]+=(A.tr[g]&&A.tr[g][fr]?A.tr[g][fr][to]:0);
+      });
     }
+    if(A.D.length>0){
+      let s3=[...A.D[0].n].sort((a,b)=>a-b);
+      s3.forEach((num,pos)=>{
+        let key=num+'_'+(pos+1);
+        if(POS_TAIL[key]!==undefined) gapTC[POS_TAIL[key].t]+=200;
+      });
+    }
+    
+    // ── 組合：隔期×2 + 全期星期統計×500 ──
+    let comboScore2=new Array(10).fill(0);
+    for(let i=0;i<10;i++) comboScore2[i]=gapTC[i]*2+dowDupAll[i]*500;
+    
+    let comboRk2=comboScore2.map((c,i)=>({t:i,c,
+      gapScore:gapTC[i],
+      histCnt:dowDupAll[i],
+      histPct:dowTotalAll>0?(dowDupAll[i]/dowTotalAll*100).toFixed(0):'0'
+    })).sort((a,b)=>b.c-a.c);
+    
+    const prevTails4=A.D[0].n.map(x=>x%10);
+    const prevCount2={};
+    prevTails4.forEach(t=>prevCount2[t]=(prevCount2[t]||0)+1);
+    const dupTails2=Object.entries(prevCount2).filter(([t,c])=>c>=2).map(([t])=>+t);
+    const curDupLabel2=dupTails2.length>0?`尾${dupTails2.join('、')}重複`:'全不同';
+    const noDupPct2=dowTotalAll>0?(dowNoDupAll/dowTotalAll*100).toFixed(0):'--';
+    
+    dupTailHTML=`
+    <div class="section-hdr">🎯 下一期最可能重複的尾數（週${DOW_N4[nextDow3]}）</div>
+    <div class="card"><div class="card-bd">
+      <div style="font-size:12px;color:var(--label3);margin-bottom:12px">週${DOW_N4[nextDow3]}全${dowTotalAll}期統計 + 隔期法加權 ・當期${curDupLabel2}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        ${comboRk2.slice(0,5).map((r,i)=>`<div style="flex:1;min-width:55px;background:${i===0?'var(--red)10':'var(--bg)'};border:${i===0?'2px solid var(--red)50':'1px solid var(--sep2)'};border-radius:12px;padding:12px 8px;text-align:center">
+          <div style="font-size:22px;font-weight:900;color:${i===0?'var(--red)':'var(--label2)'}">尾${r.t}</div>
+          <div style="font-size:13px;font-weight:700;color:${i===0?'var(--red)':'var(--label3)'}">歷${r.histPct}%</div>
+          <div style="font-size:11px;color:var(--label3)">隔期${r.gapScore}</div>
+        </div>`).join('')}
+      </div>
+      <div style="background:var(--bg);border-radius:10px;padding:10px;text-align:center;border:1px solid var(--sep2)">
+        <span style="font-size:13px;color:var(--label3)">無重複：</span>
+        <span style="font-size:15px;font-weight:800;color:var(--teal)">${noDupPct2}%</span>
+        <span style="font-size:12px;color:var(--label3)">（${dowNoDupAll}/${dowTotalAll}期）</span>
+      </div>
+    </div></div>`;
+  }
+
+  // ═══ 0尾預測（星期偏好+遺漏期數+隔期分數）═══
+  let tail0HTML='';
+  if(A.D.length>=2){
+    const latDate4=new Date(A.D[0].d.replace(/\//g,'-'));
+    let nextDow4=latDate4.getDay()===6?1:latDate4.getDay()+1;
+    if(nextDow4===0) nextDow4=1;
+    const DOW_N5=['日','一','二','三','四','五','六'];
+    
+    // 星期偏好：該星期幾0尾出現率
+    let dowHas0=0,dowTotal4=0;
+    for(let i=0;i<A.D.length;i++){
+      const nd=new Date(A.D[i].d.replace(/\//g,'-')).getDay();
+      if(nd===nextDow4){dowTotal4++;if(A.D[i].n.some(x=>x%10===0)) dowHas0++;}
+    }
+    const dowPct0=dowTotal4>0?(dowHas0/dowTotal4*100).toFixed(1):'30.0';
+    
+    // 遺漏期數
+    let missStreak=0;
+    for(let i=0;i<A.D.length;i++){
+      if(A.D[i].n.some(x=>x%10===0)) break;
+      missStreak++;
+    }
+    // 查歷史上遺漏同期數後出現率
+    let missHit=0,missTotal2=0;
+    const tails4=A.D.map(r=>r.n.some(x=>x%10===0));
+    for(let i=0;i<A.D.length-1;i++){
+      let ms=0;
+      for(let j=i+1;j<A.D.length;j++){
+        if(tails4[j]) break;
+        ms++;
+      }
+      if(ms===missStreak){missTotal2++;if(tails4[i]) missHit++;}
+    }
+    const missPct=missTotal2>=3?(missHit/missTotal2*100).toFixed(1):dowPct0;
+    const missSample=missTotal2>=3?missTotal2:0;
+    
+    // 隔期分數
+    let gapTC0=new Array(10).fill(0);
+    const tails5=A.D.map(r=>[...new Set(r.n.map(x=>x%10))]);
+    for(let g=1;g<=5;g++){
+      let srcIdx=g-1;
+      if(srcIdx>=A.D.length) continue;
+      let srcTails=[...new Set(A.D[srcIdx].n.map(x=>x%10))];
+      srcTails.forEach(fr=>{
+        for(let to=0;to<10;to++) gapTC0[to]+=(A.tr[g]&&A.tr[g][fr]?A.tr[g][fr][to]:0);
+      });
+    }
+    if(A.D.length>0){
+      let s4=[...A.D[0].n].sort((a,b)=>a-b);
+      s4.forEach((num,pos)=>{
+        let key=num+'_'+(pos+1);
+        if(POS_TAIL[key]!==undefined) gapTC0[POS_TAIL[key].t]+=200;
+      });
+    }
+    const totalGap=gapTC0.reduce((a,b)=>a+b,0);
+    const gapPct0=totalGap>0?(gapTC0[0]/totalGap*100).toFixed(1):'7.0';
+    const ranked0=gapTC0.map((c,i)=>({t:i,c})).sort((a,b)=>b.c-a.c);
+    const tail0rank=ranked0.findIndex(r=>r.t===0)+1;
+    
+    // 整體出現率
+    let allHas0=0;
+    A.D.forEach(r=>{if(r.n.some(x=>x%10===0)) allHas0++;});
+    const allPct0=(allHas0/A.D.length*100).toFixed(1);
+    
+    // 最近0尾開出的號碼
+    let last0nums=[];
+    for(let i=0;i<A.D.length&&last0nums.length<3;i++){
+      A.D[i].n.forEach(n=>{if(n%10===0&&!last0nums.includes(n)) last0nums.push(n);});
+    }
+    
+    // 各星期的0尾出現率（顯示用）
+    let dowAll=[];
+    for(let d=1;d<=6;d++){
+      let t=0,h=0;
+      A.D.forEach(r=>{
+        let nd=new Date(r.d.replace(/\//g,'-')).getDay();
+        if(nd===d){t++;if(r.n.some(x=>x%10===0)) h++;}
+      });
+      dowAll.push({d,pct:t>0?(h/t*100).toFixed(0):'0',total:t,hit:h});
+    }
+    
+    const nextDateObj4=new Date(latDate4);
+    nextDateObj4.setDate(nextDateObj4.getDate()+(latDate4.getDay()===6?2:1));
+    const nextDateStr4=(nextDateObj4.getMonth()+1)+'/'+nextDateObj4.getDate();
+    
+    tail0HTML=`
+    <div class="section-hdr">🔟 0尾預測（${nextDateStr4} 週${DOW_N5[nextDow4]}）</div>
+    <div class="card"><div class="card-bd">
+      <div style="display:flex;gap:12px;margin-bottom:16px">
+        <div style="flex:1;background:var(--blue)10;border:2px solid var(--blue)50;border-radius:14px;padding:16px;text-align:center">
+          <div style="font-size:13px;color:var(--label3)">週${DOW_N5[nextDow4]}出現率</div>
+          <div style="font-size:36px;font-weight:900;color:var(--blue)">${dowPct0}%</div>
+          <div style="font-size:12px;color:var(--label3)">${dowHas0}/${dowTotal4}期</div>
+        </div>
+        <div style="flex:1;background:var(--bg);border:1px solid var(--sep2);border-radius:14px;padding:16px;text-align:center">
+          <div style="font-size:13px;color:var(--label3)">已遺漏</div>
+          <div style="font-size:36px;font-weight:900;color:${missStreak>=5?'var(--red)':'var(--label2)'}">${missStreak}期</div>
+          ${missSample>=3?`<div style="font-size:12px;color:var(--label3)">同遺漏後出現${missPct}%</div>`:`<div style="font-size:12px;color:var(--label3)">整體${allPct0}%</div>`}
+        </div>
+        <div style="flex:0.7;background:var(--bg);border:1px solid var(--sep2);border-radius:14px;padding:16px;text-align:center">
+          <div style="font-size:13px;color:var(--label3)">隔期排名</div>
+          <div style="font-size:36px;font-weight:900;color:var(--label3)">#${tail0rank}</div>
+          <div style="font-size:12px;color:var(--label3)">佔比${gapPct0}%</div>
+        </div>
+      </div>
+      <div style="font-size:14px;font-weight:700;color:var(--label3);margin-bottom:8px">各星期 0尾出現率</div>
+      <div style="display:flex;gap:6px;margin-bottom:14px">
+        ${dowAll.map(d=>`<div style="flex:1;background:${d.d===nextDow4?'var(--blue)10':'var(--bg)'};border:${d.d===nextDow4?'1.5px solid var(--blue)40':'1px solid var(--sep2)'};border-radius:10px;padding:8px 4px;text-align:center">
+          <div style="font-size:11px;color:var(--label3)">週${DOW_N5[d.d]}</div>
+          <div style="font-size:16px;font-weight:800;color:${d.d===nextDow4?'var(--blue)':'var(--label2)'}">${d.pct}%</div>
+        </div>`).join('')}
+      </div>
+      <div style="font-size:12px;color:var(--label3)">📍 0尾號碼：10、20、30 ・整體出現率 ${allPct0}% ・最近開出 ${last0nums.map(n=>'<strong>'+n+'</strong>').join('、')}</div>
+    </div></div>`;
   }
 
   const tailRk3=A.tailRk.slice(0,2);let trPool=[];
@@ -2063,6 +2167,7 @@ function renderOe(el,A){
   ${oePredHTML}
   ${uniqTailHTML}
   ${dupTailHTML}
+  ${tail0HTML}
   <div class="section-hdr">🔮 下一期單雙組合推薦</div>
   <div class="card"><div class="card-hd"><h3>六維度綜合評分</h3><p>歷史25% ＋ 近10期20% ＋ 轉移20% ＋ 推薦TOP10吻合15% ＋ 鄰號10% ＋ 遺漏10%</p></div>
   <div class="card-bd">${sortedCombos.map((k,i)=>{const od=parseInt(k[0]);const sc=scores[k];const hist=histPct[k];const rec=recOE[k]||0;const isTop=i===0;const isTop2=i<=1;return`<div style="padding:14px 0;border-bottom:1px solid var(--sep2)"><div class="row" style="margin-bottom:8px"><span class="rank-num ${i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':''}">${i===0?'①':i===1?'②':i===2?'③':i+1}</span><span style="font-size:${isTop?'21px':'17px'};font-weight:${isTop?900:700};color:${isTop?'var(--label)':'var(--label2)'};min-width:80px">${k}</span>${br(sc/maxScore*100,isTop?'var(--orange)':isTop2?'var(--blue)':'var(--bg3)',isTop?22:16)}<span style="font-size:${isTop?'18px':'15px'};font-weight:${isTop?800:600};color:${isTop?'var(--orange)':'var(--label3)'};min-width:44px;text-align:right">${sc.toFixed(1)}</span></div><div style="padding-left:38px;display:flex;gap:8px;flex-wrap:wrap"><span class="stat-pill" style="font-size:12px;padding:4px 10px">歷史 ${hist.toFixed(0)}%</span><span class="stat-pill" style="font-size:12px;padding:4px 10px">近10期 ${rec}次</span>${isTop?`<span style="font-size:13px;font-weight:700;color:var(--green);background:rgba(52,199,89,.12);padding:4px 12px;border-radius:20px">✓ 推薦</span>`:''}</div></div>`;}).join('')}</div></div>
