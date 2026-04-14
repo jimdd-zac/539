@@ -128,6 +128,7 @@ tr.hl td{font-weight:900;font-size:17px}
 <script>
 /* ═══ DATA ═══ */
 const INIT_DATA=[
+{d:"2026/04/14",n:[9,14,27,29,33]},
 {d:"2026/04/13",n:[18,30,31,37,38]},
 {d:"2026/04/11",n:[7,12,17,24,31]},
 {d:"2026/04/10",n:[9,21,25,27,30]},
@@ -1211,6 +1212,9 @@ function renderBT(el,A){
 /* ═══ 位置規律表：號碼X在第Y支 → 下期最常出現的尾數（≥55%命中率，≥5樣本）═══ */
 const POS_TAIL={'1_1':{t:2,p:58},'3_1':{t:1,p:57},'3_2':{t:8,p:71},'5_2':{t:5,p:56},'6_2':{t:2,p:62},'7_2':{t:7,p:59},'7_3':{t:4,p:75},'8_2':{t:6,p:60},'8_3':{t:9,p:77},'9_1':{t:4,p:59},'9_2':{t:6,p:59},'9_3':{t:7,p:86},'10_1':{t:1,p:80},'10_3':{t:4,p:58},'11_1':{t:5,p:61},'11_2':{t:1,p:57},'12_1':{t:8,p:79},'12_3':{t:6,p:67},'12_4':{t:4,p:63},'13_1':{t:4,p:89},'13_2':{t:4,p:60},'13_4':{t:4,p:83},'14_1':{t:4,p:64},'14_2':{t:5,p:60},'14_3':{t:6,p:64},'14_4':{t:7,p:100},'15_1':{t:7,p:75},'15_2':{t:3,p:63},'15_3':{t:4,p:59},'16_1':{t:2,p:56},'16_2':{t:6,p:73},'16_3':{t:2,p:65},'16_4':{t:7,p:75},'17_1':{t:1,p:80},'17_2':{t:5,p:67},'17_3':{t:5,p:63},'17_4':{t:3,p:56},'18_2':{t:1,p:57},'18_3':{t:1,p:62},'18_4':{t:5,p:62},'19_2':{t:2,p:67},'19_3':{t:4,p:56},'19_4':{t:4,p:65},'20_3':{t:8,p:56},'20_4':{t:8,p:75},'21_2':{t:4,p:58},'21_3':{t:4,p:56},'21_4':{t:7,p:60},'22_2':{t:3,p:65},'22_3':{t:7,p:59},'22_4':{t:5,p:75},'22_5':{t:4,p:63},'23_2':{t:2,p:70},'23_3':{t:3,p:56},'23_4':{t:1,p:61},'23_5':{t:7,p:80},'24_2':{t:8,p:60},'24_3':{t:0,p:59},'24_4':{t:8,p:59},'24_5':{t:9,p:78},'25_2':{t:4,p:71},'25_3':{t:7,p:57},'25_4':{t:2,p:61},'25_5':{t:3,p:80},'26_2':{t:1,p:60},'26_3':{t:4,p:73},'26_4':{t:2,p:56},'26_5':{t:8,p:65},'27_2':{t:4,p:57},'27_3':{t:7,p:63},'27_4':{t:5,p:63},'27_5':{t:1,p:73},'28_3':{t:1,p:65},'28_4':{t:8,p:58},'28_5':{t:8,p:57},'29_3':{t:8,p:60},'29_4':{t:7,p:58},'29_5':{t:1,p:63},'30_3':{t:5,p:67},'30_4':{t:1,p:67},'31_4':{t:1,p:58},'31_5':{t:1,p:57},'32_3':{t:2,p:78},'32_4':{t:6,p:58},'32_5':{t:6,p:56},'33_4':{t:3,p:63},'34_4':{t:8,p:59},'34_5':{t:8,p:57},'36_4':{t:4,p:57},'36_5':{t:2,p:56},'37_4':{t:3,p:67},'37_5':{t:4,p:59},'38_5':{t:5,p:57}};
 
+/* ═══ 各尾數遺漏N期後的回歸率（%），樣本≥5 ═══ */
+const TAIL_MISS_RATE={0:{0:28,1:32,2:30,3:37,4:27,5:8,6:32,7:40,8:22,9:14,10:83},1:{0:49,1:41,2:47,3:22,4:39,5:59,6:57},2:{0:47,1:37,2:45,3:46,4:29,5:33,6:30,7:57},3:{0:45,1:45,2:42,3:37,4:25,5:50,6:22,7:29,8:40},4:{0:43,1:47,2:47,3:49,4:58,5:75},5:{0:45,1:37,2:49,3:56,4:31,5:27,6:38,7:40},6:{0:43,1:44,2:41,3:41,4:33,5:44,6:50},7:{0:43,1:50,2:51,3:55,4:40,5:56},8:{0:43,1:45,2:48,3:54,4:53,5:38,6:40},9:{0:40,1:46,2:47,3:43,4:29,5:53,6:43}};
+
 /* ═══ RENDER RECOMMEND (with backtest summary) ═══ */
 function renderRec(el,A){
   // 隔期次數法：用前1~5期各自的尾數查轉移矩陣，累計次數排名
@@ -1288,6 +1292,85 @@ function renderRec(el,A){
     }
   }
   let t3=gapTailRk.slice(0,2);
+  
+  // ═══ 冷卻/爆發偵測：各尾數專屬回歸率 + 位置規律 + 鄰號信號 ═══
+  let coolSwapped=false;
+  let coolSwapMsg='';
+  let burstMsg='';
+  
+  // 檢查位置規律是否指向某尾數
+  function posPointsTo(tail){return posMatches.some(p=>p.tail===tail);}
+  // 檢查前期是否有某尾數的鄰號（±1）
+  function hasNeighborNums(tail){
+    if(A.D.length===0) return false;
+    let neighbors=[];
+    for(let n=tail;n<=39;n+=10){if(n>0){if(n-1>=1)neighbors.push(n-1);if(n+1<=39)neighbors.push(n+1);}}
+    if(tail===0){[10,20,30].forEach(n=>{if(n-1>=1)neighbors.push(n-1);if(n+1<=39)neighbors.push(n+1);});}
+    return A.D[0].n.some(x=>neighbors.includes(x));
+  }
+  
+  function coolCheck(tail){
+    let miss=0;
+    for(let i=0;i<A.D.length;i++){if(allTails[i].includes(tail))break;miss++;}
+    if(miss<3) return {cooling:false,burst:false,miss,rate:50,posHit:false,neiHit:false,confidence:''};
+    let rateTable=TAIL_MISS_RATE[tail]||{};
+    let rate=rateTable[miss]!==undefined?rateTable[miss]:40;
+    let posHit=posPointsTo(tail);
+    let neiHit=hasNeighborNums(tail);
+    
+    // 信心判斷：位置+鄰號都有→75%回來，位置有→77%，都沒→48%
+    let confidence='';
+    if(rate>=50){
+      if(posHit&&neiHit) confidence='強（位置+鄰號=75%）';
+      else if(posHit) confidence='中高（位置規律=77%）';
+      else confidence='一般（無額外信號）';
+    }
+    
+    // 爆發：回歸率≥50%
+    // 冷卻：回歸率<40%，但如果位置規律指向它，降級為「觀望」不替換
+    let cooling=rate<40&&miss>=3;
+    if(cooling&&posHit) cooling=false; // 位置規律保護：不替換
+    
+    return {cooling, burst:rate>=50&&miss>=3, miss, rate, posHit, neiHit, confidence};
+  }
+  
+  // 爆發加分：遺漏≥3期且回歸率≥50%
+  // 有位置規律加持→+400，無→+200
+  for(let tail=0;tail<=9;tail++){
+    let cc=coolCheck(tail);
+    if(cc.burst){
+      let bonus=cc.posHit?400:200;
+      gapTailCount[tail]+=bonus;
+      let detail=`尾${tail}遺漏${cc.miss}期（${cc.rate}%↑`;
+      if(cc.posHit) detail+=`・位置規律✓`;
+      if(cc.neiHit) detail+=`・鄰號✓`;
+      if(cc.confidence) detail+=`・${cc.confidence}`;
+      detail+=`）`;
+      if(!burstMsg) burstMsg=detail;
+      else burstMsg+=`、`+detail;
+    }
+  }
+  // 重新排名（爆發加分後）
+  gapTailRk=gapTailCount.map((c,i)=>({tail:i,score:c,contRate:(A.tailAppear[i]>0?(A.tailStay[i]/A.tailAppear[i]*100).toFixed(0):'--')})).sort((a,b)=>b.score-a.score);
+  
+  for(let idx=0;idx<2;idx++){
+    let cc=coolCheck(t3[idx].tail);
+    if(cc.cooling){
+      for(let r=2;r<gapTailRk.length;r++){
+        let rt=gapTailRk[r].tail;
+        let ccR=coolCheck(rt);
+        let rs=streak[rt];
+        if(!ccR.cooling&&(rs<3||contRate(rt,rs)>=0.40)){
+          coolSwapped=true;
+          coolSwapMsg=`尾${t3[idx].tail}已遺漏${cc.miss}期（回歸率${cc.rate}%），正在冷卻中。已替換為尾${rt}`;
+          t3[idx]=gapTailRk[r];
+          break;
+        }
+      }
+      break;
+    }
+  }
+  
   let pool=[];t3.forEach(t=>A.tailNums[t.tail].forEach(n=>{if(!pool.includes(n))pool.push(n);}));pool.sort((a,b)=>a-b);
   let oP=pool.filter(x=>x%2===1),eP=pool.filter(x=>x%2===0);
   let tC=comb(pool.length,5),p3=tC>0?comb(oP.length,3)*comb(eP.length,2)/tC:0,p2=tC>0?comb(oP.length,2)*comb(eP.length,3)/tC:0;
@@ -1423,6 +1506,8 @@ function renderRec(el,A){
         </div>
         <div style="font-size:13px;font-weight:700;color:var(--blue);margin-top:10px;padding:10px;background:var(--blue)08;border-radius:10px;text-align:center">🎯 推薦 2 個尾數 → <strong style="font-size:18px">尾${t3[0].tail}</strong> + <strong style="font-size:18px">尾${t3[1].tail}</strong>（495期回測命中率85.1%）</div>
         ${hotSwapped?`<div style="margin-top:8px;padding:10px;background:var(--orange)10;border:1.5px solid var(--orange)40;border-radius:10px;font-size:13px;color:var(--orange)">🔥 ${hotSwapMsg}</div>`:''}
+        ${coolSwapped?`<div style="margin-top:8px;padding:10px;background:var(--blue)10;border:1.5px solid var(--blue)40;border-radius:10px;font-size:13px;color:var(--blue)">❄️ ${coolSwapMsg}</div>`:''}
+        ${burstMsg?`<div style="margin-top:8px;padding:10px;background:var(--green)10;border:1.5px solid var(--green)40;border-radius:10px;font-size:13px;color:var(--green)">🔥 爆發加分：${burstMsg}</div>`:''}
         ${posMatches.length>0?`<div style="margin-top:8px;padding:10px;background:var(--purple)10;border:1.5px solid var(--purple)40;border-radius:10px;font-size:13px;color:var(--purple)">📍 位置規律加分：${posMatches.map(p=>`${String(p.num).padStart(2,'0')}號在第${p.pos}支→尾${p.tail}(${p.pct}%)`).join('、')}</div>`:''}
       </div>`;
     })()}
