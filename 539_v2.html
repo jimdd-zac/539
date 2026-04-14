@@ -128,6 +128,7 @@ tr.hl td{font-weight:900;font-size:17px}
 <script>
 /* ═══ DATA ═══ */
 const INIT_DATA=[
+{d:"2026/04/13",n:[18,30,31,37,38]},
 {d:"2026/04/11",n:[7,12,17,24,31]},
 {d:"2026/04/10",n:[9,21,25,27,30]},
 {d:"2026/04/09",n:[2,15,25,31,38]},
@@ -2102,6 +2103,30 @@ function renderOe(el,A){
       A.D[i].n.forEach(n=>{if(n%10===0&&!last0nums.includes(n)) last0nums.push(n);});
     }
     
+    // 各0尾號碼開出後→下期再開0尾的機率
+    let zeroStats=[10,20,30].map(num=>{
+      let t=0,h=0,nextNums={10:0,20:0,30:0};
+      for(let i=1;i<A.D.length;i++){
+        if(A.D[i].n.includes(num)){
+          t++;
+          let n0=A.D[i-1].n.filter(x=>x%10===0);
+          if(n0.length>0){h++;n0.forEach(n=>{if(nextNums[n]!==undefined)nextNums[n]++;});}
+        }
+      }
+      return {num,total:t,hit:h,pct:t>0?(h/t*100).toFixed(1):'0',nextNums};
+    });
+    // 當期有哪些0尾
+    const cur0=A.D[0].n.filter(x=>x%10===0);
+    // 當期0尾個數→下期再開0尾
+    let curZeroCnt=cur0.length;
+    let cntT=0,cntH=0;
+    for(let i=1;i<A.D.length;i++){
+      if(A.D[i].n.filter(x=>x%10===0).length===curZeroCnt){
+        cntT++;if(A.D[i-1].n.some(x=>x%10===0)) cntH++;
+      }
+    }
+    const cntPct=cntT>0?(cntH/cntT*100).toFixed(1):'0';
+    
     // 各星期的0尾出現率（顯示用）
     let dowAll=[];
     for(let d=1;d<=6;d++){
@@ -2145,6 +2170,19 @@ function renderOe(el,A){
         </div>`).join('')}
       </div>
       <div style="font-size:12px;color:var(--label3)">📍 0尾號碼：10、20、30 ・整體出現率 ${allPct0}% ・最近開出 ${last0nums.map(n=>'<strong>'+n+'</strong>').join('、')}</div>
+      <div style="margin-top:14px;font-size:14px;font-weight:700;color:var(--label3);margin-bottom:8px">各0尾號碼開出後 → 下期再開0尾</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        ${zeroStats.map(s=>{
+          const isCur=cur0.includes(s.num);
+          return `<div style="flex:1;background:${isCur?'var(--green)10':'var(--bg)'};border:${isCur?'2px solid var(--green)50':'1px solid var(--sep2)'};border-radius:12px;padding:12px 6px;text-align:center">
+            <div style="font-size:20px;font-weight:900;color:${isCur?'var(--green)':'var(--label2)'}">${s.num}</div>
+            <div style="font-size:22px;font-weight:900;color:${isCur?'var(--green)':'var(--label3)'};margin-top:4px">${s.pct}%</div>
+            <div style="font-size:11px;color:var(--label3)">${s.hit}/${s.total}次</div>
+            ${isCur?'<div style="font-size:10px;color:var(--green);margin-top:4px">✓ 當期開出</div>':''}
+          </div>`;
+        }).join('')}
+      </div>
+      ${curZeroCnt>0?`<div style="font-size:12px;padding:8px 12px;background:var(--green)08;border:1px solid var(--green)30;border-radius:10px;color:var(--green)">📊 當期開出${curZeroCnt}個0尾（${cur0.join('、')}），歷史上同樣開${curZeroCnt}個0尾後下期再開：<strong>${cntPct}%</strong>（${cntH}/${cntT}）</div>`:`<div style="font-size:12px;padding:8px 12px;background:var(--bg);border:1px solid var(--sep2);border-radius:10px;color:var(--label3)">當期無0尾開出，已遺漏 ${missStreak} 期</div>`}
     </div></div>`;
   }
 
