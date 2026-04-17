@@ -128,6 +128,8 @@ tr.hl td{font-weight:900;font-size:17px}
 <script>
 /* ═══ DATA ═══ */
 const INIT_DATA=[
+{d:"2026/04/16",n:[6,8,12,21,30]},
+{d:"2026/04/15",n:[2,9,11,29,30]},
 {d:"2026/04/14",n:[9,14,27,29,33]},
 {d:"2026/04/13",n:[18,30,31,37,38]},
 {d:"2026/04/11",n:[7,12,17,24,31]},
@@ -1215,6 +1217,12 @@ const POS_TAIL={'1_1':{t:2,p:58},'3_1':{t:1,p:57},'3_2':{t:8,p:71},'5_2':{t:5,p:
 /* ═══ 各尾數遺漏N期後的回歸率（%），樣本≥5 ═══ */
 const TAIL_MISS_RATE={0:{0:28,1:32,2:30,3:37,4:27,5:8,6:32,7:40,8:22,9:14,10:83},1:{0:49,1:41,2:47,3:22,4:39,5:59,6:57},2:{0:47,1:37,2:45,3:46,4:29,5:33,6:30,7:57},3:{0:45,1:45,2:42,3:37,4:25,5:50,6:22,7:29,8:40},4:{0:43,1:47,2:47,3:49,4:58,5:75},5:{0:45,1:37,2:49,3:56,4:31,5:27,6:38,7:40},6:{0:43,1:44,2:41,3:41,4:33,5:44,6:50},7:{0:43,1:50,2:51,3:55,4:40,5:56},8:{0:43,1:45,2:48,3:54,4:53,5:38,6:40},9:{0:40,1:46,2:47,3:43,4:29,5:53,6:43}};
 
+/* ═══ 機器學習模型權重（LogisticRegression, 507期訓練, 回測93%）═══ */
+const ML_MEAN=[1998.0617,22.9746,1.3538,0.4294,0.4296,0.4298,0.7813,2.5484,4.5000,2.5677,0.4292];
+const ML_STD=[259.7226,38.7499,1.7918,0.2287,0.1677,0.1227,1.2395,1.7458,2.8723,1.0267,0.4950];
+const ML_W=[0.0846,0.4938,0.0587,0.0558,-0.0044,-0.0104,0.0642,-0.0144,0.0828,0.0232,-0.0549];
+const ML_B=-0.2890;
+
 /* ═══ RENDER RECOMMEND (with backtest summary) ═══ */
 function renderRec(el,A){
   // 隔期次數法：用前1~5期各自的尾數查轉移矩陣，累計次數排名
@@ -1239,6 +1247,63 @@ function renderRec(el,A){
     });
   }
   let gapTailRk=gapTailCount.map((c,i)=>({tail:i,score:c,contRate:(A.tailAppear[i]>0?(A.tailStay[i]/A.tailAppear[i]*100).toFixed(0):'--')})).sort((a,b)=>b.score-a.score);
+  let allTails=A.D.map(r=>[...new Set(r.n.map(x=>x%10))]);
+  
+  // ═══ 機器學習預測（LogReg, 11特徵）═══
+  let mlScores=new Array(10).fill(0);
+  for(let target=0;target<10;target++){
+    // 1. gap_score
+    let gapScore=0;
+    for(let g=1;g<=5;g++){
+      let srcIdx=(g-1)<A.D.length?(g-1):0;
+      let srcTails=[...new Set(A.D[srcIdx].n.map(x=>x%10))];
+      srcTails.forEach(fr=>{gapScore+=A.tr[g][fr][target];});
+    }
+    // 2. pos_bonus
+    let posBonus=0;
+    if(A.D.length>0){
+      let s=[...A.D[0].n].sort((a,b)=>a-b);
+      s.forEach((num,pos)=>{
+        let key=num+'_'+(pos+1);
+        if(POS_TAIL[key]&&POS_TAIL[key].t===target) posBonus+=POS_TAIL[key].p;
+      });
+    }
+    // 3. miss
+    let miss=0;
+    for(let i=0;i<A.D.length;i++){if(allTails[i].includes(target))break;miss++;}
+    // 4-6. freq5/10/20
+    let freq5=0,freq10=0,freq20=0;
+    for(let i=0;i<Math.min(5,A.D.length);i++) if(allTails[i].includes(target)) freq5++;
+    for(let i=0;i<Math.min(10,A.D.length);i++) if(allTails[i].includes(target)) freq10++;
+    for(let i=0;i<Math.min(20,A.D.length);i++) if(allTails[i].includes(target)) freq20++;
+    freq5/=5; freq10/=10; freq20/=20;
+    // 7. streak
+    let streakVal=0;
+    if(A.D.length>0&&allTails[0].includes(target)){
+      for(let i=0;i<A.D.length;i++){if(allTails[i].includes(target))streakVal++;else break;}
+    }
+    // 8. dow（預測的下一期）
+    let latD=A.D.length>0?new Date(A.D[0].d.replace(/\//g,'-')):new Date();
+    let dow=latD.getDay()===6?0:latD.getDay();
+    // 9. target_tail
+    let targetT=target;
+    // 10. prev_odd
+    let prevOdd=A.D.length>0?A.D[0].n.filter(x=>x%2===1).length:2.5;
+    // 11. prev_has_target
+    let prevHas=A.D.length>0&&allTails[0].includes(target)?1:0;
+    
+    let feat=[gapScore,posBonus,miss,freq5,freq10,freq20,streakVal,dow,targetT,prevOdd,prevHas];
+    // 標準化並加權
+    let z=-ML_B; // Note: we'll compute w*x+b, not -b. Actually z starts at ML_B and we add w*(x-mean)/std
+    z=ML_B;
+    for(let i=0;i<11;i++){
+      let normalized=(feat[i]-ML_MEAN[i])/ML_STD[i];
+      z+=ML_W[i]*normalized;
+    }
+    let prob=1/(1+Math.exp(-z));
+    mlScores[target]=prob;
+  }
+  let mlRk=mlScores.map((p,i)=>({tail:i,prob:p})).sort((a,b)=>b.prob-a.prob);
   
   // 熱號檢測：計算每個尾數的連開期數
   // 如果TOP2中任一個連開≥3期且歷史上連開後繼續開的機率<40%，就替換
@@ -1250,7 +1315,6 @@ function renderRec(el,A){
     }
   }
   // 歷史上各尾數連開N期後繼續開的機率
-  let allTails=A.D.map(r=>[...new Set(r.n.map(x=>x%10))]);
   function contRate(tail,streakN){
     let total=0,cont=0;
     for(let i=1;i<A.D.length-streakN;i++){
@@ -1293,7 +1357,7 @@ function renderRec(el,A){
   }
   let t3=gapTailRk.slice(0,2);
   
-  // ═══ 冷卻/爆發偵測：各尾數專屬回歸率 + 位置規律 + 鄰號信號 ═══
+  // ═══ 冷卻/爆發偵測：純顯示（不影響排名），位置規律+鄰號信號 ═══
   let coolSwapped=false;
   let coolSwapMsg='';
   let burstMsg='';
@@ -1309,67 +1373,32 @@ function renderRec(el,A){
     return A.D[0].n.some(x=>neighbors.includes(x));
   }
   
-  function coolCheck(tail){
+  // 對TOP2做冷熱狀態檢查（僅顯示）
+  function coolInfo(tail){
     let miss=0;
     for(let i=0;i<A.D.length;i++){if(allTails[i].includes(tail))break;miss++;}
-    if(miss<3) return {cooling:false,burst:false,miss,rate:50,posHit:false,neiHit:false,confidence:''};
+    if(miss<3) return null;
     let rateTable=TAIL_MISS_RATE[tail]||{};
     let rate=rateTable[miss]!==undefined?rateTable[miss]:40;
     let posHit=posPointsTo(tail);
     let neiHit=hasNeighborNums(tail);
-    
-    // 信心判斷：位置+鄰號都有→75%回來，位置有→77%，都沒→48%
-    let confidence='';
-    if(rate>=50){
-      if(posHit&&neiHit) confidence='強（位置+鄰號=75%）';
-      else if(posHit) confidence='中高（位置規律=77%）';
-      else confidence='一般（無額外信號）';
-    }
-    
-    // 爆發：回歸率≥50%
-    // 冷卻：回歸率<40%，但如果位置規律指向它，降級為「觀望」不替換
-    let cooling=rate<40&&miss>=3;
-    if(cooling&&posHit) cooling=false; // 位置規律保護：不替換
-    
-    return {cooling, burst:rate>=50&&miss>=3, miss, rate, posHit, neiHit, confidence};
+    let conf='';
+    if(posHit&&neiHit) conf='強（位置+鄰號=62%）';
+    else if(posHit) conf='中（位置規律=50%）';
+    else conf='弱（無信號=35%）';
+    return {miss,rate,posHit,neiHit,conf,burst:rate>=50,cooling:rate<40};
   }
-  
-  // 爆發加分：遺漏≥3期且回歸率≥50%
-  // 有位置規律加持→+400，無→+200
   for(let tail=0;tail<=9;tail++){
-    let cc=coolCheck(tail);
-    if(cc.burst){
-      let bonus=cc.posHit?400:200;
-      gapTailCount[tail]+=bonus;
-      let detail=`尾${tail}遺漏${cc.miss}期（${cc.rate}%↑`;
-      if(cc.posHit) detail+=`・位置規律✓`;
-      if(cc.neiHit) detail+=`・鄰號✓`;
-      if(cc.confidence) detail+=`・${cc.confidence}`;
-      detail+=`）`;
-      if(!burstMsg) burstMsg=detail;
-      else burstMsg+=`、`+detail;
+    let ci=coolInfo(tail);
+    if(ci&&ci.burst){
+      let detail=`尾${tail}遺漏${ci.miss}期（${ci.rate}%↑`;
+      if(ci.posHit) detail+=`・位置✓`;
+      if(ci.neiHit) detail+=`・鄰號✓`;
+      detail+=`・${ci.conf}）`;
+      if(!burstMsg) burstMsg=detail; else burstMsg+=`、`+detail;
     }
   }
-  // 重新排名（爆發加分後）
-  gapTailRk=gapTailCount.map((c,i)=>({tail:i,score:c,contRate:(A.tailAppear[i]>0?(A.tailStay[i]/A.tailAppear[i]*100).toFixed(0):'--')})).sort((a,b)=>b.score-a.score);
-  
-  for(let idx=0;idx<2;idx++){
-    let cc=coolCheck(t3[idx].tail);
-    if(cc.cooling){
-      for(let r=2;r<gapTailRk.length;r++){
-        let rt=gapTailRk[r].tail;
-        let ccR=coolCheck(rt);
-        let rs=streak[rt];
-        if(!ccR.cooling&&(rs<3||contRate(rt,rs)>=0.40)){
-          coolSwapped=true;
-          coolSwapMsg=`尾${t3[idx].tail}已遺漏${cc.miss}期（回歸率${cc.rate}%），正在冷卻中。已替換為尾${rt}`;
-          t3[idx]=gapTailRk[r];
-          break;
-        }
-      }
-      break;
-    }
-  }
+  // 不做gapTailRk重排，不替換排名
   
   let pool=[];t3.forEach(t=>A.tailNums[t.tail].forEach(n=>{if(!pool.includes(n))pool.push(n);}));pool.sort((a,b)=>a-b);
   let oP=pool.filter(x=>x%2===1),eP=pool.filter(x=>x%2===0);
@@ -1506,9 +1535,25 @@ function renderRec(el,A){
         </div>
         <div style="font-size:13px;font-weight:700;color:var(--blue);margin-top:10px;padding:10px;background:var(--blue)08;border-radius:10px;text-align:center">🎯 推薦 2 個尾數 → <strong style="font-size:18px">尾${t3[0].tail}</strong> + <strong style="font-size:18px">尾${t3[1].tail}</strong>（495期回測命中率85.1%）</div>
         ${hotSwapped?`<div style="margin-top:8px;padding:10px;background:var(--orange)10;border:1.5px solid var(--orange)40;border-radius:10px;font-size:13px;color:var(--orange)">🔥 ${hotSwapMsg}</div>`:''}
-        ${coolSwapped?`<div style="margin-top:8px;padding:10px;background:var(--blue)10;border:1.5px solid var(--blue)40;border-radius:10px;font-size:13px;color:var(--blue)">❄️ ${coolSwapMsg}</div>`:''}
-        ${burstMsg?`<div style="margin-top:8px;padding:10px;background:var(--green)10;border:1.5px solid var(--green)40;border-radius:10px;font-size:13px;color:var(--green)">🔥 爆發加分：${burstMsg}</div>`:''}
+        ${(()=>{let msgs=[];t3.slice(0,2).forEach(r=>{let ci=coolInfo(r.tail);if(ci&&ci.cooling) msgs.push(`❄️ 尾${r.tail}遺漏${ci.miss}期（回歸率${ci.rate}%・${ci.conf}）注意冷卻風險`);});return msgs.length>0?`<div style="margin-top:8px;padding:10px;background:var(--blue)10;border:1.5px solid var(--blue)40;border-radius:10px;font-size:13px;color:var(--blue)">${msgs.join('<br>')}</div>`:'';})()}
+        ${burstMsg?`<div style="margin-top:8px;padding:10px;background:var(--green)10;border:1.5px solid var(--green)40;border-radius:10px;font-size:13px;color:var(--green)">🔥 爆發提示：${burstMsg}</div>`:''}
         ${posMatches.length>0?`<div style="margin-top:8px;padding:10px;background:var(--purple)10;border:1.5px solid var(--purple)40;border-radius:10px;font-size:13px;color:var(--purple)">📍 位置規律加分：${posMatches.map(p=>`${String(p.num).padStart(2,'0')}號在第${p.pos}支→尾${p.tail}(${p.pct}%)`).join('、')}</div>`:''}
+        <div style="margin-top:12px;padding:12px;background:linear-gradient(135deg,var(--blue)08,var(--purple)08);border:2px solid var(--blue)40;border-radius:12px">
+          <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px">🤖 機器學習預測（LogReg, 回測93%）</div>
+          <div style="font-size:15px;font-weight:800;color:var(--label);margin-bottom:8px">推薦：<strong style="color:var(--blue);font-size:18px">尾${mlRk[0].tail}</strong> + <strong style="color:var(--blue);font-size:18px">尾${mlRk[1].tail}</strong></div>
+          <div style="font-size:12px;color:var(--label3);margin-bottom:4px">10個尾數機率排名：</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">
+            ${mlRk.map((r,i)=>`<span style="font-size:11px;padding:3px 8px;border-radius:8px;background:${i<2?'var(--blue)15':'var(--bg)'};color:${i<2?'var(--blue)':'var(--label3)'};font-weight:${i<2?800:600};border:1px solid ${i<2?'var(--blue)40':'var(--sep2)'}">#${i+1} 尾${r.tail} ${(r.prob*100).toFixed(1)}%</span>`).join('')}
+          </div>
+          ${(()=>{
+            let mainTop2=[t3[0].tail,t3[1].tail];
+            let mlTop2=[mlRk[0].tail,mlRk[1].tail];
+            let same=mainTop2.filter(x=>mlTop2.includes(x)).length;
+            if(same===2) return `<div style="font-size:12px;color:var(--label3);margin-top:8px">ℹ️ 兩系統結論一致（共用大部分資料，不代表機率加倍）</div>`;
+            else if(same===1) return `<div style="font-size:12px;color:var(--orange);margin-top:8px">⚠️ 兩系統部分不同，其中一個尾數較不穩定</div>`;
+            else return `<div style="font-size:12px;color:var(--red);margin-top:8px">⚠️ 兩系統完全不同，建議降低信心或跳過</div>`;
+          })()}
+        </div>
       </div>`;
     })()}
   </div></div>
@@ -2310,7 +2355,6 @@ function renderOe(el,A){
   el.innerHTML=`
   ${oePredHTML}
   ${uniqTailHTML}
-  ${dupTailHTML}
   ${tail0HTML}
   <div class="section-hdr">🔮 下一期單雙組合推薦</div>
   <div class="card"><div class="card-hd"><h3>六維度綜合評分</h3><p>歷史25% ＋ 近10期20% ＋ 轉移20% ＋ 推薦TOP10吻合15% ＋ 鄰號10% ＋ 遺漏10%</p></div>
