@@ -128,6 +128,7 @@ tr.hl td{font-weight:900;font-size:17px}
 <script>
 /* ═══ DATA ═══ */
 const INIT_DATA=[
+{d:"2026/04/17",n:[1,2,7,16,26]},
 {d:"2026/04/16",n:[6,8,12,21,30]},
 {d:"2026/04/15",n:[2,9,11,29,30]},
 {d:"2026/04/14",n:[9,14,27,29,33]},
@@ -1205,6 +1206,10 @@ function analyze(customData){
   tailRk=tailFinal.map((s,i)=>({tail:i,score:s,cnt:tCnt[i],r10:tR10[i],stk:tStk[i],gap:tMiss[i],contRate:(tailAppear[i]>0?(tailStay[i]/tailAppear[i]*100).toFixed(0):'--')})).sort((a,b)=>b.score-a.score);
 
 let numFinal={};
+  // === 尾數加權：主系統 TOP3 尾數的號碼提升分數 ===
+  // (此處無法用 ML 加權，因為 ML 在 renderRecommend 裡才算)
+  let mainTop3=tailRk.slice(0,3).map(r=>r.tail);
+  let mainTop2=tailRk.slice(0,2).map(r=>r.tail);
   for(let n=1;n<=39;n++){
     let tS=(trNum[n]||0)*100*W.tr;
     let fS=((cnt[n]/(L*5)*39)*30+(r10[n]/10*39)*40+(stk[n]>=3?30:stk[n]>=2?20:stk[n]>=1?10:0))*W.fq;
@@ -1218,7 +1223,12 @@ let numFinal={};
     let mkS=mk2Norm[n]*W.markov;
     let paS=pairNorm[n]*W.pair;
     let chS=chiNorm[n]*W.chi;
-    numFinal[n]={total:tS+fS+nS+rS+mS+maS+trS+cyS+byS+mkS+paS+chS,tS,fS,nS,rS,mS,maS,trS,cyS,byS,mkS,paS,chS};
+    let baseTotal=tS+fS+nS+rS+mS+maS+trS+cyS+byS+mkS+paS+chS;
+    // 尾數過濾加權（主系統 TOP2 尾 ×1.25, TOP3 ×1.10）
+    let tailMul=1.0;
+    if(mainTop2.includes(n%10)) tailMul=1.25;
+    else if(mainTop3.includes(n%10)) tailMul=1.10;
+    numFinal[n]={total:baseTotal*tailMul,tS,fS,nS,rS,mS,maS,trS,cyS,byS,mkS,paS,chS,tailMul};
   }
   let numRk=Object.keys(numFinal).map(k=>({num:+k,score:numFinal[+k].total,detail:numFinal[+k]})).sort((a,b)=>b.score-a.score);
   let tailNums=[];for(let t=0;t<10;t++){let a=[];for(let n=1;n<=39;n++)if(n%10===t)a.push(n);tailNums.push(a);}
@@ -1388,7 +1398,7 @@ function renderAll(){
   let added=allData.filter(r=>!INIT_DATA.some(ir=>ir.d===r.d));
   document.getElementById('headerSub').textContent=`共 ${allData.length} 期資料　最新 ${allData[0].d}`+(added.length?`　已新增 +${added.length}`:'');
   document.getElementById('latestBar').innerHTML=`<div class="latest-top"><div class="latest-title">最新開獎</div><div class="latest-date">${allData[0].d}</div></div><div class="latest-balls">${allData[0].n.map(x=>blW(x,42)).join('')}</div><div class="tail-row"><div class="tail-label">尾數 →</div>${A.latT.slice().sort((a,b)=>a-b).map(t=>blWT(t,36)).join('')}</div>`;
-  const tabs=[{k:"recommend",l:"🎯 推薦"},{k:"trans",l:"🔄 轉移"},{k:"oe",l:"🎲 奇偶"},{k:"backtest",l:"📈 回測"},{k:"nei",l:"👥 鄰號"},{k:"freq",l:"📊 頻率"},{k:"rep",l:"🔁 重複"},{k:"miss",l:"❄️ 遺漏"},{k:"struct",l:"📐 結構"},{k:"ml",l:"🤖 ML"},{k:"pair",l:"💎 配對"},{k:"chi",l:"📏 卡方"},{k:"add",l:"➕ 更新"}];
+  const tabs=[{k:"recommend",l:"🎯 推薦"},{k:"trans",l:"🔄 轉移"},{k:"oe",l:"🎲 奇偶"},{k:"miss",l:"❄️ 遺漏"},{k:"backtest",l:"📈 回測"},{k:"nei",l:"👥 鄰號"},{k:"freq",l:"📊 頻率"},{k:"rep",l:"🔁 重複"},{k:"struct",l:"📐 結構"},{k:"ml",l:"🤖 ML"},{k:"pair",l:"💎 配對"},{k:"chi",l:"📏 卡方"},{k:"add",l:"➕ 更新"}];
   document.getElementById('tabBar').innerHTML=tabs.map(t=>`<button data-tab="${t.k}" class="${curTab===t.k?'on':''}" onclick="switchTab('${t.k}')">${t.l}</button>`).join('');
   renderTab(curTab);
 }
@@ -1513,13 +1523,13 @@ function renderBT(el,A){
 const POS_TAIL={'1_1':{t:2,p:58},'3_1':{t:1,p:57},'3_2':{t:8,p:71},'5_2':{t:5,p:56},'6_2':{t:2,p:62},'7_2':{t:7,p:59},'7_3':{t:4,p:75},'8_2':{t:6,p:60},'8_3':{t:9,p:77},'9_1':{t:4,p:59},'9_2':{t:6,p:59},'9_3':{t:7,p:86},'10_1':{t:1,p:80},'10_3':{t:4,p:58},'11_1':{t:5,p:61},'11_2':{t:1,p:57},'12_1':{t:8,p:79},'12_3':{t:6,p:67},'12_4':{t:4,p:63},'13_1':{t:4,p:89},'13_2':{t:4,p:60},'13_4':{t:4,p:83},'14_1':{t:4,p:64},'14_2':{t:5,p:60},'14_3':{t:6,p:64},'14_4':{t:7,p:100},'15_1':{t:7,p:75},'15_2':{t:3,p:63},'15_3':{t:4,p:59},'16_1':{t:2,p:56},'16_2':{t:6,p:73},'16_3':{t:2,p:65},'16_4':{t:7,p:75},'17_1':{t:1,p:80},'17_2':{t:5,p:67},'17_3':{t:5,p:63},'17_4':{t:3,p:56},'18_2':{t:1,p:57},'18_3':{t:1,p:62},'18_4':{t:5,p:62},'19_2':{t:2,p:67},'19_3':{t:4,p:56},'19_4':{t:4,p:65},'20_3':{t:8,p:56},'20_4':{t:8,p:75},'21_2':{t:4,p:58},'21_3':{t:4,p:56},'21_4':{t:7,p:60},'22_2':{t:3,p:65},'22_3':{t:7,p:59},'22_4':{t:5,p:75},'22_5':{t:4,p:63},'23_2':{t:2,p:70},'23_3':{t:3,p:56},'23_4':{t:1,p:61},'23_5':{t:7,p:80},'24_2':{t:8,p:60},'24_3':{t:0,p:59},'24_4':{t:8,p:59},'24_5':{t:9,p:78},'25_2':{t:4,p:71},'25_3':{t:7,p:57},'25_4':{t:2,p:61},'25_5':{t:3,p:80},'26_2':{t:1,p:60},'26_3':{t:4,p:73},'26_4':{t:2,p:56},'26_5':{t:8,p:65},'27_2':{t:4,p:57},'27_3':{t:7,p:63},'27_4':{t:5,p:63},'27_5':{t:1,p:73},'28_3':{t:1,p:65},'28_4':{t:8,p:58},'28_5':{t:8,p:57},'29_3':{t:8,p:60},'29_4':{t:7,p:58},'29_5':{t:1,p:63},'30_3':{t:5,p:67},'30_4':{t:1,p:67},'31_4':{t:1,p:58},'31_5':{t:1,p:57},'32_3':{t:2,p:78},'32_4':{t:6,p:58},'32_5':{t:6,p:56},'33_4':{t:3,p:63},'34_4':{t:8,p:59},'34_5':{t:8,p:57},'36_4':{t:4,p:57},'36_5':{t:2,p:56},'37_4':{t:3,p:67},'37_5':{t:4,p:59},'38_5':{t:5,p:57}};
 
 /* ═══ 各尾數遺漏N期後的回歸率（%），樣本≥5 ═══ */
-const TAIL_MISS_RATE={0:{0:32,1:34,2:33,3:37,4:27,5:11,6:28,7:35,8:40,9:11,10:75},1:{0:48,1:42,2:50,3:30,4:46,5:62,6:50},2:{0:46,1:42,2:47,3:48,4:32,5:38,6:46,7:57},3:{0:44,1:44,2:45,3:41,4:29,5:40,6:20,7:42,8:29,9:40},4:{0:43,1:46,2:37,3:42,4:51,5:42,6:27,7:50},5:{0:44,1:40,2:44,3:52,4:34,5:25,6:47,7:50},6:{0:44,1:45,2:42,3:44,4:37,5:41,6:46,7:43},7:{0:46,1:48,2:50,3:46,4:36,5:67,6:17,7:20},8:{0:43,1:41,2:45,3:51,4:50,5:44,6:56},9:{0:39,1:42,2:47,3:44,4:40,5:43,6:42,7:43}};
+const TAIL_MISS_RATE={0:{0:32,1:34,2:33,3:37,4:27,5:11,6:28,7:35,8:40,9:11,10:75},1:{0:48,1:42,2:50,3:30,4:46,5:62,6:50},2:{0:46,1:42,2:47,3:48,4:32,5:38,6:46,7:57},3:{0:44,1:44,2:44,3:41,4:29,5:40,6:20,7:42,8:29,9:40},4:{0:43,1:46,2:36,3:42,4:51,5:42,6:27,7:50},5:{0:44,1:40,2:44,3:52,4:34,5:24,6:47,7:50},6:{0:44,1:45,2:42,3:44,4:37,5:41,6:46,7:43},7:{0:46,1:48,2:51,3:46,4:36,5:67,6:17,7:20},8:{0:43,1:41,2:45,3:51,4:50,5:44,6:56},9:{0:39,1:42,2:47,3:44,4:40,5:43,6:42,7:43}};
 
 /* ═══ 機器學習模型權重（LogisticRegression, 507期訓練, 回測93%）═══ */
-const ML_MEAN=[3142.8480,22.9724,1.3614,0.4270,0.4272,0.4275,0.7685,2.5223,4.5000,2.5812,0.4270];
-const ML_STD=[367.9209,38.3673,1.7966,0.2271,0.1652,0.1197,1.2119,1.7300,2.8723,1.0560,0.4946];
-const ML_W=[0.0939,0.3102,0.0593,0.1074,-0.0055,-0.0422,0.0170,-0.0012,0.0558,0.0147,-0.0316];
-const ML_B=-0.2993;
+const ML_MEAN=[3146.5174,22.9762,1.3609,0.4270,0.4271,0.4274,0.7684,2.5216,4.5000,2.5791,0.4269];
+const ML_STD=[369.8449,38.3778,1.7959,0.2270,0.1652,0.1197,1.2119,1.7290,2.8723,1.0569,0.4946];
+const ML_W=[0.0948,0.3105,0.0602,0.1064,-0.0045,-0.0442,0.0167,-0.0010,0.0554,0.0158,-0.0302];
+const ML_B=-0.3000;
 
 /* ═══ RENDER RECOMMEND (with backtest summary) ═══ */
 function renderRec(el,A){
@@ -1831,13 +1841,13 @@ function renderRec(el,A){
         <div style="font-size:14px;color:var(--label2);line-height:1.6">
           ${inPref?`✅ 模型推薦的 <strong style="color:${CL[top1tail]}">尾${top1tail}</strong> 在週${DOW_NAME[nextDow]}偏好名單中，信心加持！`:`⚠️ 模型推薦 <strong style="color:${CL[top1tail]}">尾${top1tail}</strong> 不在週${DOW_NAME[nextDow]}偏好中。可考慮改選 <strong style="color:${CL[bestDowTail]}">尾${bestDowTail}</strong>（週${DOW_NAME[nextDow]}最偏好）`}
         </div>
-        <div style="font-size:13px;font-weight:700;color:var(--blue);margin-top:10px;padding:10px;background:var(--blue)08;border-radius:10px;text-align:center">🎯 推薦 2 個尾數 → <strong style="font-size:18px">尾${t3[0].tail}</strong> + <strong style="font-size:18px">尾${t3[1].tail}</strong>（805期回測命中率84.3%）</div>
+        <div style="font-size:13px;font-weight:700;color:var(--blue);margin-top:10px;padding:10px;background:var(--blue)08;border-radius:10px;text-align:center">🎯 推薦 2 個尾數 → <strong style="font-size:18px">尾${t3[0].tail}</strong> + <strong style="font-size:18px">尾${t3[1].tail}</strong>（806期回測命中率84.3%）</div>
         ${hotSwapped?`<div style="margin-top:8px;padding:10px;background:var(--orange)10;border:1.5px solid var(--orange)40;border-radius:10px;font-size:13px;color:var(--orange)">🔥 ${hotSwapMsg}</div>`:''}
         ${(()=>{let msgs=[];t3.slice(0,2).forEach(r=>{let ci=coolInfo(r.tail);if(ci&&ci.cooling) msgs.push(`❄️ 尾${r.tail}遺漏${ci.miss}期（回歸率${ci.rate}%・${ci.conf}）注意冷卻風險`);});return msgs.length>0?`<div style="margin-top:8px;padding:10px;background:var(--blue)10;border:1.5px solid var(--blue)40;border-radius:10px;font-size:13px;color:var(--blue)">${msgs.join('<br>')}</div>`:'';})()}
         ${burstMsg?`<div style="margin-top:8px;padding:10px;background:var(--green)10;border:1.5px solid var(--green)40;border-radius:10px;font-size:13px;color:var(--green)">🔥 爆發提示：${burstMsg}</div>`:''}
         ${posMatches.length>0?`<div style="margin-top:8px;padding:10px;background:var(--purple)10;border:1.5px solid var(--purple)40;border-radius:10px;font-size:13px;color:var(--purple)">📍 位置規律加分：${posMatches.map(p=>`${String(p.num).padStart(2,'0')}號在第${p.pos}支→尾${p.tail}(${p.pct}%)`).join('、')}</div>`:''}
         <div style="margin-top:12px;padding:12px;background:linear-gradient(135deg,var(--blue)08,var(--purple)08);border:2px solid var(--blue)40;border-radius:12px">
-          <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px">🤖 機器學習預測（LogReg, 805期回測90.7%）</div>
+          <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px">🤖 機器學習預測（LogReg, 806期回測90.7%）</div>
           <div style="font-size:15px;font-weight:800;color:var(--label);margin-bottom:8px">推薦：<strong style="color:var(--blue);font-size:18px">尾${mlRk[0].tail}</strong> + <strong style="color:var(--blue);font-size:18px">尾${mlRk[1].tail}</strong></div>
           <div style="font-size:12px;color:var(--label3);margin-bottom:4px">10個尾數機率排名：</div>
           <div style="display:flex;flex-wrap:wrap;gap:4px">
@@ -2128,7 +2138,59 @@ function renderRp(el,A){
 
 function renderMs(el,A){
   let nums=Array.from({length:39},(_,i)=>i+1).sort((a,b)=>A.miss[a]-A.miss[b]);let mx=Math.max(...A.miss.slice(1),1);
-  el.innerHTML=`<div class="section-hdr">遺漏值追蹤</div><div class="card"><div class="card-hd"><h3>❄️ 遺漏期數排行</h3><p>0 期 ＝ 剛才開出　數字越大 ＝ 越久沒出</p></div><div class="card-bd" style="max-height:480px;overflow-y:auto">${nums.map(n=>{let m=A.miss[n];let c=m===0?'var(--green)':m<=2?'#b8860b':m<=5?'var(--orange)':'var(--red)';let bc=m===0?'#34c759':m<=2?'#cc9900':m<=5?'#ff9500':'#ff3b30';return`<div class="row">${bl(n,34)}${br(m/mx*100,bc,14)}<span style="font-size:17px;color:${c};font-weight:800;min-width:52px;text-align:right">${m} 期</span>${m===0?'<span style="font-size:20px">🔥</span>':''}</div>`;}).join('')}</div></div>`;
+  
+  // 計算每個尾數(0-9)的遺漏期數
+  let tailMiss=new Array(10).fill(0);
+  let allT=A.D.map(r=>[...new Set(r.n.map(x=>x%10))]);
+  for(let t=0;t<10;t++){
+    for(let i=0;i<A.D.length;i++){
+      if(allT[i].includes(t)) break;
+      tailMiss[t]++;
+    }
+  }
+  let tailSorted=Array.from({length:10},(_,i)=>i).sort((a,b)=>tailMiss[a]-tailMiss[b]);
+  let tailMx=Math.max(...tailMiss,1);
+  
+  el.innerHTML=`<div class="section-hdr">遺漏值追蹤</div>
+  <div class="card"><div class="card-hd"><h3>🎯 各尾數遺漏期數</h3><p>尾0-9 各自幾期沒開　0 期 ＝ 本期剛開</p></div>
+  <div class="card-bd">${tailSorted.map(t=>{
+    let m=tailMiss[t];
+    let c=m===0?'var(--green)':m<=2?'#b8860b':m<=5?'var(--orange)':'var(--red)';
+    let bc=m===0?'#34c759':m<=2?'#cc9900':m<=5?'#ff9500':'#ff3b30';
+    let rate=TAIL_MISS_RATE[t]&&TAIL_MISS_RATE[t][m]!==undefined?TAIL_MISS_RATE[t][m]:null;
+    let rateText=rate!==null?` <span style="font-size:12px;color:var(--label3);font-weight:500">回歸率 ${rate}%</span>`:'';
+    // 找出該尾數最佳爆發點
+    let bestMiss=-1,bestRate=0;
+    if(TAIL_MISS_RATE[t]){
+      Object.entries(TAIL_MISS_RATE[t]).forEach(([k,v])=>{
+        let kn=parseInt(k);
+        if(kn>=3&&v>bestRate){bestRate=v;bestMiss=kn;}
+      });
+    }
+    // 找出錯過最佳後的下一次機會（冷期>最佳且回歸率≥40%）
+    let nextMiss=-1,nextRate=0;
+    if(TAIL_MISS_RATE[t]&&bestMiss>=0){
+      Object.entries(TAIL_MISS_RATE[t]).forEach(([k,v])=>{
+        let kn=parseInt(k);
+        if(kn>bestMiss&&v>=40&&v>nextRate){nextRate=v;nextMiss=kn;}
+      });
+    }
+    let bestMarker='';
+    if(bestMiss>=0){
+      let atBest=m===bestMiss;
+      let atNext=nextMiss>0&&m===nextMiss;
+      let nextInfo='';
+      if(nextMiss>0){
+        let atNextMark=atNext?' ← 現在正是！':'';
+        nextInfo=`<div style="font-size:11px;color:${atNext?'var(--green)':'var(--label3)'};margin-top:2px;padding-left:48px;font-weight:${atNext?700:400}">↪️ 錯過後下一次：冷${nextMiss}期＝${nextRate}%（隔${nextMiss-bestMiss}期）${atNextMark}</div>`;
+      } else {
+        nextInfo=`<div style="font-size:11px;color:var(--label3);margin-top:2px;padding-left:48px">↪️ 錯過後無更佳機會</div>`;
+      }
+      bestMarker=`<div style="font-size:11px;color:${atBest?'var(--green)':'var(--label3)'};margin-top:2px;padding-left:48px;font-weight:${atBest?700:400}">💡 最佳爆發點：冷${bestMiss}期＝${bestRate}%${atBest?' ← 現在正是！':''}</div>${nextInfo}`;
+    }
+    return`<div style="padding:6px 0;border-bottom:1px solid var(--sep2)"><div class="row" style="padding:2px 0"><div style="min-width:48px;font-size:18px;font-weight:800;color:${CL[t]}">尾${t}</div>${br(m/tailMx*100,bc,14)}<span style="font-size:17px;color:${c};font-weight:800;min-width:52px;text-align:right">${m} 期</span>${rateText}${m===0?'<span style="font-size:18px;margin-left:4px">🔥</span>':''}</div>${bestMarker}</div>`;
+  }).join('')}</div></div>
+  <div class="card"><div class="card-hd"><h3>❄️ 號碼遺漏期數排行</h3><p>0 期 ＝ 剛才開出　數字越大 ＝ 越久沒出</p></div><div class="card-bd" style="max-height:480px;overflow-y:auto">${nums.map(n=>{let m=A.miss[n];let c=m===0?'var(--green)':m<=2?'#b8860b':m<=5?'var(--orange)':'var(--red)';let bc=m===0?'#34c759':m<=2?'#cc9900':m<=5?'#ff9500':'#ff3b30';return`<div class="row">${bl(n,34)}${br(m/mx*100,bc,14)}<span style="font-size:17px;color:${c};font-weight:800;min-width:52px;text-align:right">${m} 期</span>${m===0?'<span style="font-size:20px">🔥</span>':''}</div>`;}).join('')}</div></div>`;
 }
 
 function renderOe(el,A){
