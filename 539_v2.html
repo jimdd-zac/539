@@ -110,6 +110,7 @@ tr.hl td{font-weight:900;font-size:17px}
 </div>
 
 <div id="tab-recommend" class="tab-content active"></div>
+<div id="tab-record"    class="tab-content"></div>
 <div id="tab-backtest" class="tab-content"></div>
 <div id="tab-trans"     class="tab-content"></div>
 <div id="tab-nei"       class="tab-content"></div>
@@ -128,6 +129,7 @@ tr.hl td{font-weight:900;font-size:17px}
 <script>
 /* ═══ DATA ═══ */
 const INIT_DATA=[
+{d:"2026/04/18",n:[7,25,26,29,31]},
 {d:"2026/04/17",n:[1,2,7,16,26]},
 {d:"2026/04/16",n:[6,8,12,21,30]},
 {d:"2026/04/15",n:[2,9,11,29,30]},
@@ -1398,12 +1400,12 @@ function renderAll(){
   let added=allData.filter(r=>!INIT_DATA.some(ir=>ir.d===r.d));
   document.getElementById('headerSub').textContent=`共 ${allData.length} 期資料　最新 ${allData[0].d}`+(added.length?`　已新增 +${added.length}`:'');
   document.getElementById('latestBar').innerHTML=`<div class="latest-top"><div class="latest-title">最新開獎</div><div class="latest-date">${allData[0].d}</div></div><div class="latest-balls">${allData[0].n.map(x=>blW(x,42)).join('')}</div><div class="tail-row"><div class="tail-label">尾數 →</div>${A.latT.slice().sort((a,b)=>a-b).map(t=>blWT(t,36)).join('')}</div>`;
-  const tabs=[{k:"recommend",l:"🎯 推薦"},{k:"trans",l:"🔄 轉移"},{k:"oe",l:"🎲 奇偶"},{k:"miss",l:"❄️ 遺漏"},{k:"backtest",l:"📈 回測"},{k:"nei",l:"👥 鄰號"},{k:"freq",l:"📊 頻率"},{k:"rep",l:"🔁 重複"},{k:"struct",l:"📐 結構"},{k:"ml",l:"🤖 ML"},{k:"pair",l:"💎 配對"},{k:"chi",l:"📏 卡方"},{k:"add",l:"➕ 更新"}];
+  const tabs=[{k:"recommend",l:"🎯 推薦"},{k:"record",l:"📋 戰績"},{k:"trans",l:"🔄 轉移"},{k:"oe",l:"🎲 奇偶"},{k:"miss",l:"❄️ 遺漏"},{k:"backtest",l:"📈 回測"},{k:"nei",l:"👥 鄰號"},{k:"freq",l:"📊 頻率"},{k:"rep",l:"🔁 重複"},{k:"struct",l:"📐 結構"},{k:"ml",l:"🤖 ML"},{k:"pair",l:"💎 配對"},{k:"chi",l:"📏 卡方"},{k:"add",l:"➕ 更新"}];
   document.getElementById('tabBar').innerHTML=tabs.map(t=>`<button data-tab="${t.k}" class="${curTab===t.k?'on':''}" onclick="switchTab('${t.k}')">${t.l}</button>`).join('');
   renderTab(curTab);
 }
 
-function renderTab(k){let A=analyze(),el=document.getElementById('tab-'+k);if(k==='recommend')renderRec(el,A);else if(k==='backtest')renderBT(el,A);else if(k==='trans')renderTr(el,A);else if(k==='nei')renderNe(el,A);else if(k==='freq')renderFr(el,A);else if(k==='rep')renderRp(el,A);else if(k==='miss')renderMs(el,A);else if(k==='oe')renderOe(el,A);else if(k==='struct')renderStruct(el,A);else if(k==='ml')renderML(el,A);else if(k==='pair')renderPair(el,A);else if(k==='chi')renderChi(el,A);else if(k==='add')renderAd(el);}
+function renderTab(k){let A=analyze(),el=document.getElementById('tab-'+k);if(k==='recommend')renderRec(el,A);else if(k==='record')renderRecord(el,A);else if(k==='backtest')renderBT(el,A);else if(k==='trans')renderTr(el,A);else if(k==='nei')renderNe(el,A);else if(k==='freq')renderFr(el,A);else if(k==='rep')renderRp(el,A);else if(k==='miss')renderMs(el,A);else if(k==='oe')renderOe(el,A);else if(k==='struct')renderStruct(el,A);else if(k==='ml')renderML(el,A);else if(k==='pair')renderPair(el,A);else if(k==='chi')renderChi(el,A);else if(k==='add')renderAd(el);}
 
 /* ═══ BACKTEST TAB ═══ */
 function renderBT(el,A){
@@ -1523,13 +1525,13 @@ function renderBT(el,A){
 const POS_TAIL={'1_1':{t:2,p:58},'3_1':{t:1,p:57},'3_2':{t:8,p:71},'5_2':{t:5,p:56},'6_2':{t:2,p:62},'7_2':{t:7,p:59},'7_3':{t:4,p:75},'8_2':{t:6,p:60},'8_3':{t:9,p:77},'9_1':{t:4,p:59},'9_2':{t:6,p:59},'9_3':{t:7,p:86},'10_1':{t:1,p:80},'10_3':{t:4,p:58},'11_1':{t:5,p:61},'11_2':{t:1,p:57},'12_1':{t:8,p:79},'12_3':{t:6,p:67},'12_4':{t:4,p:63},'13_1':{t:4,p:89},'13_2':{t:4,p:60},'13_4':{t:4,p:83},'14_1':{t:4,p:64},'14_2':{t:5,p:60},'14_3':{t:6,p:64},'14_4':{t:7,p:100},'15_1':{t:7,p:75},'15_2':{t:3,p:63},'15_3':{t:4,p:59},'16_1':{t:2,p:56},'16_2':{t:6,p:73},'16_3':{t:2,p:65},'16_4':{t:7,p:75},'17_1':{t:1,p:80},'17_2':{t:5,p:67},'17_3':{t:5,p:63},'17_4':{t:3,p:56},'18_2':{t:1,p:57},'18_3':{t:1,p:62},'18_4':{t:5,p:62},'19_2':{t:2,p:67},'19_3':{t:4,p:56},'19_4':{t:4,p:65},'20_3':{t:8,p:56},'20_4':{t:8,p:75},'21_2':{t:4,p:58},'21_3':{t:4,p:56},'21_4':{t:7,p:60},'22_2':{t:3,p:65},'22_3':{t:7,p:59},'22_4':{t:5,p:75},'22_5':{t:4,p:63},'23_2':{t:2,p:70},'23_3':{t:3,p:56},'23_4':{t:1,p:61},'23_5':{t:7,p:80},'24_2':{t:8,p:60},'24_3':{t:0,p:59},'24_4':{t:8,p:59},'24_5':{t:9,p:78},'25_2':{t:4,p:71},'25_3':{t:7,p:57},'25_4':{t:2,p:61},'25_5':{t:3,p:80},'26_2':{t:1,p:60},'26_3':{t:4,p:73},'26_4':{t:2,p:56},'26_5':{t:8,p:65},'27_2':{t:4,p:57},'27_3':{t:7,p:63},'27_4':{t:5,p:63},'27_5':{t:1,p:73},'28_3':{t:1,p:65},'28_4':{t:8,p:58},'28_5':{t:8,p:57},'29_3':{t:8,p:60},'29_4':{t:7,p:58},'29_5':{t:1,p:63},'30_3':{t:5,p:67},'30_4':{t:1,p:67},'31_4':{t:1,p:58},'31_5':{t:1,p:57},'32_3':{t:2,p:78},'32_4':{t:6,p:58},'32_5':{t:6,p:56},'33_4':{t:3,p:63},'34_4':{t:8,p:59},'34_5':{t:8,p:57},'36_4':{t:4,p:57},'36_5':{t:2,p:56},'37_4':{t:3,p:67},'37_5':{t:4,p:59},'38_5':{t:5,p:57}};
 
 /* ═══ 各尾數遺漏N期後的回歸率（%），樣本≥5 ═══ */
-const TAIL_MISS_RATE={0:{0:32,1:34,2:33,3:37,4:27,5:11,6:28,7:35,8:40,9:11,10:75},1:{0:48,1:42,2:50,3:30,4:46,5:62,6:50},2:{0:46,1:42,2:47,3:48,4:32,5:38,6:46,7:57},3:{0:44,1:44,2:44,3:41,4:29,5:40,6:20,7:42,8:29,9:40},4:{0:43,1:46,2:36,3:42,4:51,5:42,6:27,7:50},5:{0:44,1:40,2:44,3:52,4:34,5:24,6:47,7:50},6:{0:44,1:45,2:42,3:44,4:37,5:41,6:46,7:43},7:{0:46,1:48,2:51,3:46,4:36,5:67,6:17,7:20},8:{0:43,1:41,2:45,3:51,4:50,5:44,6:56},9:{0:39,1:42,2:47,3:44,4:40,5:43,6:42,7:43}};
+const TAIL_MISS_RATE={0:{0:32,1:34,2:33,3:37,4:27,5:11,6:28,7:35,8:40,9:11,10:75},1:{0:48,1:42,2:50,3:30,4:46,5:62,6:50},2:{0:46,1:42,2:47,3:48,4:32,5:38,6:46,7:57},3:{0:44,1:44,2:44,3:40,4:29,5:40,6:20,7:42,8:29,9:40},4:{0:43,1:46,2:36,3:41,4:51,5:42,6:27,7:50},5:{0:44,1:40,2:44,3:52,4:34,5:24,6:50,7:50},6:{0:44,1:45,2:42,3:44,4:37,5:41,6:46,7:43},7:{0:46,1:48,2:51,3:46,4:36,5:67,6:17,7:20},8:{0:43,1:41,2:45,3:51,4:50,5:44,6:56},9:{0:39,1:42,2:47,3:44,4:40,5:43,6:42,7:43}};
 
 /* ═══ 機器學習模型權重（LogisticRegression, 507期訓練, 回測93%）═══ */
-const ML_MEAN=[3146.5174,22.9762,1.3609,0.4270,0.4271,0.4274,0.7684,2.5216,4.5000,2.5791,0.4269];
-const ML_STD=[369.8449,38.3778,1.7959,0.2270,0.1652,0.1197,1.2119,1.7290,2.8723,1.0569,0.4946];
-const ML_W=[0.0948,0.3105,0.0602,0.1064,-0.0045,-0.0442,0.0167,-0.0010,0.0554,0.0158,-0.0302];
-const ML_B=-0.3000;
+const ML_MEAN=[3150.9214,22.9770,1.3606,0.4270,0.4271,0.4274,0.7679,2.5222,4.5000,2.5809,0.4268];
+const ML_STD=[371.3118,38.3670,1.7950,0.2270,0.1652,0.1198,1.2114,1.7279,2.8723,1.0574,0.4946];
+const ML_W=[0.0946,0.3102,0.0596,0.1046,-0.0033,-0.0443,0.0179,-0.0012,0.0548,0.0148,-0.0319];
+const ML_B=-0.3007;
 
 /* ═══ RENDER RECOMMEND (with backtest summary) ═══ */
 function renderRec(el,A){
@@ -1841,13 +1843,13 @@ function renderRec(el,A){
         <div style="font-size:14px;color:var(--label2);line-height:1.6">
           ${inPref?`✅ 模型推薦的 <strong style="color:${CL[top1tail]}">尾${top1tail}</strong> 在週${DOW_NAME[nextDow]}偏好名單中，信心加持！`:`⚠️ 模型推薦 <strong style="color:${CL[top1tail]}">尾${top1tail}</strong> 不在週${DOW_NAME[nextDow]}偏好中。可考慮改選 <strong style="color:${CL[bestDowTail]}">尾${bestDowTail}</strong>（週${DOW_NAME[nextDow]}最偏好）`}
         </div>
-        <div style="font-size:13px;font-weight:700;color:var(--blue);margin-top:10px;padding:10px;background:var(--blue)08;border-radius:10px;text-align:center">🎯 推薦 2 個尾數 → <strong style="font-size:18px">尾${t3[0].tail}</strong> + <strong style="font-size:18px">尾${t3[1].tail}</strong>（806期回測命中率84.3%）</div>
+        <div style="font-size:13px;font-weight:700;color:var(--blue);margin-top:10px;padding:10px;background:var(--blue)08;border-radius:10px;text-align:center">🎯 推薦 2 個尾數 → <strong style="font-size:18px">尾${t3[0].tail}</strong> + <strong style="font-size:18px">尾${t3[1].tail}</strong>（807期回測命中率84.3%）</div>
         ${hotSwapped?`<div style="margin-top:8px;padding:10px;background:var(--orange)10;border:1.5px solid var(--orange)40;border-radius:10px;font-size:13px;color:var(--orange)">🔥 ${hotSwapMsg}</div>`:''}
         ${(()=>{let msgs=[];t3.slice(0,2).forEach(r=>{let ci=coolInfo(r.tail);if(ci&&ci.cooling) msgs.push(`❄️ 尾${r.tail}遺漏${ci.miss}期（回歸率${ci.rate}%・${ci.conf}）注意冷卻風險`);});return msgs.length>0?`<div style="margin-top:8px;padding:10px;background:var(--blue)10;border:1.5px solid var(--blue)40;border-radius:10px;font-size:13px;color:var(--blue)">${msgs.join('<br>')}</div>`:'';})()}
         ${burstMsg?`<div style="margin-top:8px;padding:10px;background:var(--green)10;border:1.5px solid var(--green)40;border-radius:10px;font-size:13px;color:var(--green)">🔥 爆發提示：${burstMsg}</div>`:''}
         ${posMatches.length>0?`<div style="margin-top:8px;padding:10px;background:var(--purple)10;border:1.5px solid var(--purple)40;border-radius:10px;font-size:13px;color:var(--purple)">📍 位置規律加分：${posMatches.map(p=>`${String(p.num).padStart(2,'0')}號在第${p.pos}支→尾${p.tail}(${p.pct}%)`).join('、')}</div>`:''}
         <div style="margin-top:12px;padding:12px;background:linear-gradient(135deg,var(--blue)08,var(--purple)08);border:2px solid var(--blue)40;border-radius:12px">
-          <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px">🤖 機器學習預測（LogReg, 806期回測90.7%）</div>
+          <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px">🤖 機器學習預測（LogReg, 807期回測90.7%）</div>
           <div style="font-size:15px;font-weight:800;color:var(--label);margin-bottom:8px">推薦：<strong style="color:var(--blue);font-size:18px">尾${mlRk[0].tail}</strong> + <strong style="color:var(--blue);font-size:18px">尾${mlRk[1].tail}</strong></div>
           <div style="font-size:12px;color:var(--label3);margin-bottom:4px">10個尾數機率排名：</div>
           <div style="display:flex;flex-wrap:wrap;gap:4px">
@@ -2135,6 +2137,203 @@ function renderRp(el,A){
   let sorted=A.latest.slice().sort((a,b)=>(A.repN[b]||0)-(A.repN[a]||0));let mx=Math.max(...A.latest.map(x=>A.repN[x]||0),1);
   el.innerHTML=`<div class="section-hdr">重複號分析</div><div style="padding:0 16px 12px;display:flex;gap:8px;flex-wrap:wrap"><div class="stat-pill">歷史重複率 <span class="stat-val">${(A.repRate*100).toFixed(1)}%</span></div><div class="stat-pill">每期約 <span class="stat-val">${(A.repRate*5).toFixed(1)}</span> 個</div></div><div class="card"><div class="card-hd"><h3>🔁 上期號碼重複排序</h3><p>歷史上，下一期繼續開出的次數</p></div><div class="card-bd">${sorted.map((n,i)=>`<div class="row"><span class="rank-num ${i<2?'rank-1':''}">${i+1}</span>${bl(n,38)}${br(mx>0?(A.repN[n]||0)/mx*100:0,CL[n%10],16)}<span style="font-size:18px;font-weight:800;color:var(--label);min-width:48px;text-align:right">${A.repN[n]||0} 次</span></div>`).join('')}</div></div>`;
 }
+
+function renderRecord(el,A){
+  // localStorage key
+  const KEY='l539_record_v1';
+  let records=[];
+  try{records=JSON.parse(localStorage.getItem(KEY)||'[]');}catch(e){records=[];}
+  
+  // 當期推薦（從當前的A.tailRk和ML得到）
+  let mainTop2=A.tailRk.slice(0,2).map(r=>r.tail);
+  // ML 分數需要重算（從A.D和權重）
+  let allT=A.D.map(r=>[...new Set(r.n.map(x=>x%10))]);
+  let mlScoresNow=new Array(10).fill(0);
+  for(let target=0;target<10;target++){
+    let gapScore=0;
+    for(let g=1;g<=5;g++){
+      let srcIdx=(g-1)<A.D.length?(g-1):0;
+      [...new Set(A.D[srcIdx].n.map(x=>x%10))].forEach(fr=>{gapScore+=A.tr[g][fr][target];});
+    }
+    let posBonus=0;
+    if(A.D.length>0){
+      [...A.D[0].n].sort((a,b)=>a-b).forEach((num,pos)=>{
+        let key=num+'_'+(pos+1);
+        if(POS_TAIL[key]&&POS_TAIL[key].t===target) posBonus+=POS_TAIL[key].p;
+      });
+    }
+    let mi=0;for(let i=0;i<A.D.length;i++){if(allT[i].includes(target))break;mi++;}
+    let f5=0,f10=0,f20=0;
+    for(let i=0;i<Math.min(5,A.D.length);i++) if(allT[i].includes(target)) f5++;
+    for(let i=0;i<Math.min(10,A.D.length);i++) if(allT[i].includes(target)) f10++;
+    for(let i=0;i<Math.min(20,A.D.length);i++) if(allT[i].includes(target)) f20++;
+    f5/=5;f10/=10;f20/=20;
+    let stk=0;
+    if(A.D.length>0&&allT[0].includes(target)){for(let i=0;i<A.D.length;i++){if(allT[i].includes(target))stk++;else break;}}
+    let latD=A.D.length>0?new Date(A.D[0].d.replace(/\//g,'-')):new Date();
+    let nextDow=(latD.getDay()+1)%7;if(nextDow===0)nextDow=1; // 週日跳週一
+    let prevOdd=A.D.length>0?A.D[0].n.filter(x=>x%2===1).length:2.5;
+    let prevHas=A.D.length>0&&allT[0].includes(target)?1:0;
+    let feat=[gapScore,posBonus,mi,f5,f10,f20,stk,nextDow,target,prevOdd,prevHas];
+    let z=ML_B;
+    for(let i=0;i<11;i++) z+=ML_W[i]*(feat[i]-ML_MEAN[i])/ML_STD[i];
+    mlScoresNow[target]=1/(1+Math.exp(-z));
+  }
+  let mlTop2=mlScoresNow.map((p,i)=>({t:i,p})).sort((a,b)=>b.p-a.p).slice(0,2).map(x=>x.t);
+  
+  // 下一期日期
+  let lastDate=new Date(A.D[0].d.replace(/\//g,'-'));
+  let nextD=new Date(lastDate); nextD.setDate(lastDate.getDate()+1);
+  if(nextD.getDay()===0) nextD.setDate(nextD.getDate()+1); // 週日跳過
+  let nextDateStr=nextD.getFullYear()+'/'+String(nextD.getMonth()+1).padStart(2,'0')+'/'+String(nextD.getDate()).padStart(2,'0');
+  
+  // 檢查是否已存下一期推薦
+  let existsNext=records.find(r=>r.d===nextDateStr);
+  
+  // 統計實戰命中率
+  let withResult=records.filter(r=>r.actual);
+  let totalHit=withResult.filter(r=>r.myChoice&&r.myChoice.some(t=>r.actual.includes(t))).length;
+  let recHit=withResult.filter(r=>r.rec&&r.rec.some(t=>r.actual.includes(t))).length;
+  
+  el.innerHTML=`<div class="section-hdr">實戰紀錄</div>
+    <div style="padding:0 16px 12px;display:flex;gap:8px;flex-wrap:wrap">
+      <div class="stat-pill">已記錄 <span class="stat-val">${records.length}</span> 期</div>
+      <div class="stat-pill">含結果 <span class="stat-val">${withResult.length}</span> 期</div>
+    </div>
+    ${withResult.length>0?`
+    <div class="card"><div class="card-hd"><h3>📊 實戰命中率</h3><p>基於你實際記錄的資料</p></div>
+    <div class="card-bd" style="padding:14px">
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--sep2)">
+        <span>系統推薦命中率</span>
+        <strong style="color:var(--green);font-size:18px">${(recHit/withResult.length*100).toFixed(1)}%</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0">
+        <span>你的選擇命中率</span>
+        <strong style="color:var(--blue);font-size:18px">${(totalHit/withResult.length*100).toFixed(1)}%</strong>
+      </div>
+      ${withResult.length<20?`<div style="font-size:12px;color:var(--label3);margin-top:8px">⚠️ 樣本少於20期，數據還不穩定</div>`:''}
+    </div></div>`:''}
+    
+    <div class="card"><div class="card-hd"><h3>📝 記錄下一期（${nextDateStr}）</h3><p>存下今天的推薦與你的選擇</p></div>
+    <div class="card-bd" style="padding:14px">
+      <div style="margin-bottom:10px;font-size:14px">
+        <strong>主系統 TOP2：</strong>尾${mainTop2[0]} + 尾${mainTop2[1]}<br>
+        <strong>ML TOP2：</strong>尾${mlTop2[0]} + 尾${mlTop2[1]}
+      </div>
+      <div style="margin-bottom:10px;font-size:14px;color:var(--label2)">
+        你要選哪兩個尾數？
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px" id="myPickBtns">
+        ${[0,1,2,3,4,5,6,7,8,9].map(t=>`<button onclick="togglePick(${t})" id="pick-${t}" class="pick-btn" style="padding:8px 14px;border:1.5px solid var(--sep2);background:var(--bg2);border-radius:10px;font-weight:700;color:var(--label);cursor:pointer;font-family:'Noto Sans TC',-apple-system,sans-serif">尾${t}</button>`).join('')}
+      </div>
+      <button onclick="saveRecord('${nextDateStr}',[${mainTop2}],[${mlTop2}])" style="width:100%;padding:12px;background:var(--blue);color:white;border:none;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;font-family:'Noto Sans TC',-apple-system,sans-serif">💾 儲存本期預測</button>
+      ${existsNext?`<div style="font-size:12px;color:var(--orange);margin-top:8px;text-align:center">⚠️ ${nextDateStr} 已記錄，儲存會覆蓋</div>`:''}
+    </div></div>
+    
+    ${records.length>0?`
+    <div class="card"><div class="card-hd"><h3>📋 歷史紀錄</h3><p>點「輸入結果」補上開獎號碼</p></div>
+    <div class="card-bd" style="max-height:600px;overflow-y:auto">
+      ${records.slice().reverse().map((r,idx)=>{
+        let origIdx=records.length-1-idx;
+        let hit=r.actual&&r.myChoice?r.myChoice.filter(t=>r.actual.includes(t)).length:null;
+        let recH=r.actual&&r.rec?r.rec.filter(t=>r.actual.includes(t)).length:null;
+        return `<div style="padding:12px;border-bottom:1px solid var(--sep2)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <strong style="font-size:15px">${r.d}</strong>
+            ${r.actual?`<span style="font-size:12px;color:var(--green);font-weight:700">已開獎</span>`:`<button onclick="inputResult(${origIdx})" style="padding:4px 10px;background:var(--orange);color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',-apple-system,sans-serif">輸入結果</button>`}
+          </div>
+          <div style="font-size:13px;color:var(--label2);line-height:1.8">
+            主系統推薦：尾${r.mainTop2?r.mainTop2.join('+尾'):'?'}<br>
+            ML推薦：尾${r.mlTop2?r.mlTop2.join('+尾'):'?'}<br>
+            我選：${r.myChoice?'尾'+r.myChoice.join('+尾'):'未記錄'}
+            ${r.actual?`<br>開獎尾數：${r.actual.join('、')}<br><span style="color:${hit>0?'var(--green)':'var(--red)'};font-weight:700">我的結果：${hit}/2 ${hit>0?'✅':'❌'}</span> | 系統推薦：${recH}/2`:''}
+          </div>
+          <button onclick="delRecord(${origIdx})" style="margin-top:6px;padding:4px 8px;background:none;border:1px solid var(--red);color:var(--red);border-radius:6px;font-size:11px;cursor:pointer;font-family:'Noto Sans TC',-apple-system,sans-serif">刪除</button>
+        </div>`;
+      }).join('')}
+    </div></div>`:''}
+    
+    <div style="padding:12px 16px;font-size:11px;color:var(--label3);line-height:1.6">
+      💡 資料存在手機 localStorage，清除瀏覽器資料會消失。<br>
+      建議：累積 20-30 期後，比對系統推薦與你實際選擇的差距。
+    </div>`;
+  
+  // 恢復已選狀態
+  window._curPick=[];
+}
+
+window.togglePick=function(t){
+  if(!window._curPick) window._curPick=[];
+  let idx=window._curPick.indexOf(t);
+  if(idx>=0){window._curPick.splice(idx,1);}
+  else if(window._curPick.length<2){window._curPick.push(t);}
+  else {alert('最多選2個尾數');return;}
+  document.querySelectorAll('.pick-btn').forEach(b=>{
+    let n=+b.id.split('-')[1];
+    if(window._curPick.includes(n)){
+      b.style.background='var(--blue)';b.style.color='white';b.style.borderColor='var(--blue)';
+    }else{
+      b.style.background='var(--bg2)';b.style.color='var(--label)';b.style.borderColor='var(--sep2)';
+    }
+  });
+};
+
+window.saveRecord=function(date,mainTop2,mlTop2){
+  if(!window._curPick||window._curPick.length===0){alert('請先選你要下的尾數');return;}
+  const KEY='l539_record_v1';
+  let records=[];try{records=JSON.parse(localStorage.getItem(KEY)||'[]');}catch(e){}
+  records=records.filter(r=>r.d!==date);
+  records.push({
+    d:date,
+    mainTop2:mainTop2,
+    mlTop2:mlTop2,
+    myChoice:window._curPick.slice().sort(),
+    rec:mlTop2, // 預設系統推薦以 ML 為準
+    actual:null
+  });
+  records.sort((a,b)=>a.d.localeCompare(b.d));
+  localStorage.setItem(KEY,JSON.stringify(records));
+  window._curPick=[];
+  alert('✅ 已儲存 '+date+' 預測！');
+  renderTab('record');
+};
+
+window.inputResult=function(idx){
+  const KEY='l539_record_v1';
+  let records=[];try{records=JSON.parse(localStorage.getItem(KEY)||'[]');}catch(e){return;}
+  let input=prompt('輸入 '+records[idx].d+' 的開獎 5 個號碼（逗號分隔，例如 07,25,26,29,31）:');
+  if(!input) return;
+  let nums=input.split(/[\s,，]+/).map(s=>parseInt(s.trim())).filter(n=>!isNaN(n)&&n>=1&&n<=39);
+  if(nums.length!==5){alert('請輸入 5 個 1-39 的號碼');return;}
+  nums.sort((a,b)=>a-b);
+  let actualTails=[...new Set(nums.map(n=>n%10))];
+  records[idx].actual=actualTails;
+  records[idx].actualNums=nums;
+  localStorage.setItem(KEY,JSON.stringify(records));
+  
+  // 同步寫進 allData（INIT_DATA），讓整個系統重新計算
+  let dataDate=records[idx].d;
+  let existing=allData.find(r=>r.d===dataDate);
+  if(!existing){
+    allData=[{d:dataDate,n:nums},...allData];
+    allData.sort((a,b)=>b.d.localeCompare(a.d));
+    saveData();
+    alert('✅ 已記錄開獎結果\n✅ 已加入 '+dataDate+' 的資料\n✅ 推薦頁已自動更新為下一期預測');
+    renderAll();
+  } else {
+    alert('✅ 已記錄開獎結果\n(資料中已有 '+dataDate+'，不重複加入)');
+    renderTab('record');
+  }
+};
+
+window.delRecord=function(idx){
+  if(!confirm('確定刪除這筆紀錄？')) return;
+  const KEY='l539_record_v1';
+  let records=[];try{records=JSON.parse(localStorage.getItem(KEY)||'[]');}catch(e){return;}
+  records.splice(idx,1);
+  localStorage.setItem(KEY,JSON.stringify(records));
+  renderTab('record');
+};
 
 function renderMs(el,A){
   let nums=Array.from({length:39},(_,i)=>i+1).sort((a,b)=>A.miss[a]-A.miss[b]);let mx=Math.max(...A.miss.slice(1),1);
