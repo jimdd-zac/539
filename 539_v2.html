@@ -110,7 +110,6 @@ tr.hl td{font-weight:900;font-size:17px}
 </div>
 
 <div id="tab-recommend" class="tab-content active"></div>
-<div id="tab-record"    class="tab-content"></div>
 <div id="tab-backtest" class="tab-content"></div>
 <div id="tab-trans"     class="tab-content"></div>
 <div id="tab-nei"       class="tab-content"></div>
@@ -129,6 +128,8 @@ tr.hl td{font-weight:900;font-size:17px}
 <script>
 /* ═══ DATA ═══ */
 const INIT_DATA=[
+{d:"2026/04/21",n:[1,6,14,26,28]},
+{d:"2026/04/20",n:[3,4,5,20,36]},
 {d:"2026/04/18",n:[7,25,26,29,31]},
 {d:"2026/04/17",n:[1,2,7,16,26]},
 {d:"2026/04/16",n:[6,8,12,21,30]},
@@ -1318,12 +1319,60 @@ function runBacktest(nDraws){
       let srcT=[...new Set(allData[si].n.map(x=>x%10))];
       srcT.forEach(fr=>{for(let to=0;to<10;to++) gapTC[to]+=A.tr[g][fr][to];});
     }
-    let top3tails=gapTC.map((c,i)=>({t:i,c})).sort((a,b)=>b.c-a.c).slice(0,2).map(r=>r.t);
+    // 加位置規律加分
+    if(t+1<allData.length){
+      let sortedN=[...allData[t+1].n].sort((a,b)=>a-b);
+      sortedN.forEach((num,pos)=>{
+        let key=num+'_'+(pos+1);
+        if(POS_TAIL[key]) gapTC[POS_TAIL[key].t]+=200;
+      });
+    }
+    let mainRk=gapTC.map((c,i)=>({t:i,c})).sort((a,b)=>b.c-a.c);
+    let mainTop2=[mainRk[0].t, mainRk[1].t];
+    let top3tails=mainTop2;
+    
+    // ML TOP2 - 用 LogReg 權重
+    let mlScoresBT=new Array(10).fill(0);
+    let allTailsBT=histData.map(r=>[...new Set(r.n.map(x=>x%10))]);
+    for(let target=0;target<10;target++){
+      let gap=0;
+      for(let g=1;g<=5;g++){
+        let srcIdx=(g-1)<histData.length?(g-1):0;
+        [...new Set(histData[srcIdx].n.map(x=>x%10))].forEach(fr=>{gap+=A.tr[g][fr][target];});
+      }
+      let pos=0;
+      if(histData.length>0){
+        [...histData[0].n].sort((a,b)=>a-b).forEach((num,p)=>{
+          let key=num+'_'+(p+1);
+          if(POS_TAIL[key]&&POS_TAIL[key].t===target) pos+=POS_TAIL[key].p;
+        });
+      }
+      let mi=0;for(let i=0;i<histData.length;i++){if(allTailsBT[i].includes(target))break;mi++;}
+      let f5=0,f10=0,f20=0;
+      for(let i=0;i<Math.min(5,histData.length);i++) if(allTailsBT[i].includes(target)) f5++;
+      for(let i=0;i<Math.min(10,histData.length);i++) if(allTailsBT[i].includes(target)) f10++;
+      for(let i=0;i<Math.min(20,histData.length);i++) if(allTailsBT[i].includes(target)) f20++;
+      f5/=5;f10/=10;f20/=20;
+      let stk=0;
+      if(histData.length>0&&allTailsBT[0].includes(target)){for(let i=0;i<histData.length;i++){if(allTailsBT[i].includes(target))stk++;else break;}}
+      let dow=new Date(allData[t].d.replace(/\//g,'-')).getDay();
+      let prevOdd=histData.length>0?histData[0].n.filter(x=>x%2===1).length:2.5;
+      let prevHas=histData.length>0&&allTailsBT[0].includes(target)?1:0;
+      let feat=[gap,pos,mi,f5,f10,f20,stk,dow,target,prevOdd,prevHas];
+      let z=ML_B;
+      for(let i=0;i<11;i++) z+=ML_W[i]*(feat[i]-ML_MEAN[i])/ML_STD[i];
+      mlScoresBT[target]=1/(1+Math.exp(-z));
+    }
+    let mlRk=mlScoresBT.map((p,i)=>({t:i,p})).sort((a,b)=>b.p-a.p);
+    let mlTop2=[mlRk[0].t, mlRk[1].t];
+    let mlProbs=[mlRk[0].p, mlRk[1].p];
     
     let numHit10=top10.filter(n=>actualSet.has(n)).length;
     let numHit15=top15.filter(n=>actualSet.has(n)).length;
     let numHit20=top20.filter(n=>actualSet.has(n)).length;
     let tailHit=top3tails.filter(t=>actualTails.has(t)).length;
+    let mainHit=mainTop2.filter(t=>actualTails.has(t)).length;
+    let mlHit=mlTop2.filter(t=>actualTails.has(t)).length;
     
     // Per-dimension: score each dimension's top 10 separately
     let dimDetail={};
@@ -1356,6 +1405,7 @@ function runBacktest(nDraws){
     
     results.push({
       date:allData[t].d, actual, top10, top15, top20, top3tails,
+      mainTop2, mlTop2, mlProbs, mainHit, mlHit,
       numHit10, numHit15, numHit20, tailHit, dimDetail, actualTails:[...actualTails]
     });
   }
@@ -1400,16 +1450,16 @@ function renderAll(){
   let added=allData.filter(r=>!INIT_DATA.some(ir=>ir.d===r.d));
   document.getElementById('headerSub').textContent=`共 ${allData.length} 期資料　最新 ${allData[0].d}`+(added.length?`　已新增 +${added.length}`:'');
   document.getElementById('latestBar').innerHTML=`<div class="latest-top"><div class="latest-title">最新開獎</div><div class="latest-date">${allData[0].d}</div></div><div class="latest-balls">${allData[0].n.map(x=>blW(x,42)).join('')}</div><div class="tail-row"><div class="tail-label">尾數 →</div>${A.latT.slice().sort((a,b)=>a-b).map(t=>blWT(t,36)).join('')}</div>`;
-  const tabs=[{k:"recommend",l:"🎯 推薦"},{k:"record",l:"📋 戰績"},{k:"trans",l:"🔄 轉移"},{k:"oe",l:"🎲 奇偶"},{k:"miss",l:"❄️ 遺漏"},{k:"backtest",l:"📈 回測"},{k:"nei",l:"👥 鄰號"},{k:"freq",l:"📊 頻率"},{k:"rep",l:"🔁 重複"},{k:"struct",l:"📐 結構"},{k:"ml",l:"🤖 ML"},{k:"pair",l:"💎 配對"},{k:"chi",l:"📏 卡方"},{k:"add",l:"➕ 更新"}];
+  const tabs=[{k:"recommend",l:"🎯 推薦"},{k:"backtest",l:"📈 回測"},{k:"trans",l:"🔄 轉移"},{k:"oe",l:"🎲 奇偶"},{k:"miss",l:"❄️ 遺漏"},{k:"nei",l:"👥 鄰號"},{k:"freq",l:"📊 頻率"},{k:"rep",l:"🔁 重複"},{k:"struct",l:"📐 結構"},{k:"ml",l:"🤖 ML"},{k:"pair",l:"💎 配對"},{k:"chi",l:"📏 卡方"},{k:"add",l:"➕ 更新"}];
   document.getElementById('tabBar').innerHTML=tabs.map(t=>`<button data-tab="${t.k}" class="${curTab===t.k?'on':''}" onclick="switchTab('${t.k}')">${t.l}</button>`).join('');
   renderTab(curTab);
 }
 
-function renderTab(k){let A=analyze(),el=document.getElementById('tab-'+k);if(k==='recommend')renderRec(el,A);else if(k==='record')renderRecord(el,A);else if(k==='backtest')renderBT(el,A);else if(k==='trans')renderTr(el,A);else if(k==='nei')renderNe(el,A);else if(k==='freq')renderFr(el,A);else if(k==='rep')renderRp(el,A);else if(k==='miss')renderMs(el,A);else if(k==='oe')renderOe(el,A);else if(k==='struct')renderStruct(el,A);else if(k==='ml')renderML(el,A);else if(k==='pair')renderPair(el,A);else if(k==='chi')renderChi(el,A);else if(k==='add')renderAd(el);}
+function renderTab(k){let A=analyze(),el=document.getElementById('tab-'+k);if(k==='recommend')renderRec(el,A);else if(k==='backtest')renderBT(el,A);else if(k==='trans')renderTr(el,A);else if(k==='nei')renderNe(el,A);else if(k==='freq')renderFr(el,A);else if(k==='rep')renderRp(el,A);else if(k==='miss')renderMs(el,A);else if(k==='oe')renderOe(el,A);else if(k==='struct')renderStruct(el,A);else if(k==='ml')renderML(el,A);else if(k==='pair')renderPair(el,A);else if(k==='chi')renderChi(el,A);else if(k==='add')renderAd(el);}
 
 /* ═══ BACKTEST TAB ═══ */
 function renderBT(el,A){
-  let bt=runBacktest(5);
+  let bt=runBacktest(30);
   if(!bt){el.innerHTML=`<div class="section-hdr">回測資料不足</div>`;return;}
   
   let W=getWeights();
@@ -1418,43 +1468,70 @@ function renderBT(el,A){
   let avgH10=(bt.results.reduce((s,r)=>s+r.numHit10,0)/bt.nDraws).toFixed(2);
   let avgH15=(bt.results.reduce((s,r)=>s+r.numHit15,0)/bt.nDraws).toFixed(2);
   let avgH20=(bt.results.reduce((s,r)=>s+r.numHit20,0)/bt.nDraws).toFixed(2);
-  let avgTail=(bt.results.reduce((s,r)=>s+r.tailHit,0)/bt.nDraws).toFixed(2);
   
-  /* ── 每期詳情 ── */
+  // 計算主系統 vs ML 命中率
+  let mainAtLeast1=bt.results.filter(r=>r.mainHit>=1).length;
+  let mlAtLeast1=bt.results.filter(r=>r.mlHit>=1).length;
+  let mainAll2=bt.results.filter(r=>r.mainHit>=2).length;
+  let mlAll2=bt.results.filter(r=>r.mlHit>=2).length;
+  let mainRate=(mainAtLeast1/bt.nDraws*100).toFixed(1);
+  let mlRate=(mlAtLeast1/bt.nDraws*100).toFixed(1);
+  
+  /* ── 每期詳情：顯示主系統TOP2 和 ML TOP2 對照 ── */
   let drawHTML=bt.results.map(r=>{
     let actualBalls=r.actual.map(n=>{
-      let inTop10=r.top10.includes(n);
-      return`<span class="ball ${inTop10?'bt-hit':'bt-miss'}" style="width:36px;height:36px;font-size:14px">${String(n).padStart(2,'0')}</span>`;
-    }).join('');
-    
-    let top10Balls=r.top10.map(n=>{
-      let hit=r.actual.includes(n);
       let t=n%10;
-      return hit
-        ?`<span class="ball" style="width:32px;height:32px;font-size:12px;background:${CL[t]};color:#fff;box-shadow:0 2px 6px ${CL[t]}55">${String(n).padStart(2,'0')}</span>`
-        :`<span class="ball" style="width:32px;height:32px;font-size:12px;background:var(--bg3);color:var(--label4)">${String(n).padStart(2,'0')}</span>`;
+      let hitMain=r.mainTop2.includes(t);
+      let hitML=r.mlTop2.includes(t);
+      let bg=hitMain||hitML?CL[t]:'var(--bg3)';
+      let color=hitMain||hitML?'#fff':'var(--label4)';
+      return`<span class="ball" style="width:36px;height:36px;font-size:14px;background:${bg};color:${color};box-shadow:${hitMain||hitML?'0 2px 6px '+CL[t]+'55':'none'}">${String(n).padStart(2,'0')}</span>`;
     }).join('');
     
-    let tailBalls=r.top3tails.map(t=>{
+    // 主系統 TOP2 - 大圓+ 尾X 標籤 + ✅/❌
+    let mainTailBalls=r.mainTop2.map(t=>{
       let hit=r.actualTails.includes(t);
-      return hit
-        ?`<span class="ball" style="width:30px;height:30px;font-size:13px;background:${CL[t]};color:#fff">${t}</span>`
-        :`<span class="ball" style="width:30px;height:30px;font-size:13px;background:var(--bg3);color:var(--label4)">${t}</span>`;
+      return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:60px">
+        <div style="width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:900;${hit?`background:${CL[t]};color:#fff;box-shadow:0 3px 10px ${CL[t]}66`:'background:var(--bg3);color:var(--label4);opacity:0.45'}">尾${t}</div>
+        <span style="font-size:13px;font-weight:800;color:${hit?'var(--green)':'var(--red)'}">${hit?'✅ 中':'❌ 未中'}</span>
+      </div>`;
     }).join('');
     
-    return`<div style="padding:16px 20px;border-bottom:1px solid var(--sep2)">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <span style="font-size:15px;font-weight:700;color:var(--label)">${r.date}</span>
-        <div style="display:flex;gap:6px">
-          <span class="bt-badge" style="background:${r.numHit10>=2?'rgba(52,199,89,.15)':'rgba(255,59,48,.10)'};color:${r.numHit10>=2?'#1a6e33':'#c0281e'}">TOP10命中 ${r.numHit10}/5</span>
-          <span class="bt-badge" style="background:${r.tailHit>=2?'rgba(52,199,89,.15)':'rgba(255,149,0,.12)'};color:${r.tailHit>=2?'#1a6e33':'var(--orange)'}">尾數 ${r.tailHit}/4</span>
+    // ML TOP2 - 大圓 + 尾X + 機率 + ✅/❌
+    let mlTailBalls=r.mlTop2.map((t,i)=>{
+      let hit=r.actualTails.includes(t);
+      let prob=r.mlProbs?Math.round(r.mlProbs[i]*100):null;
+      return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:60px">
+        <div style="width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:900;${hit?`background:${CL[t]};color:#fff;box-shadow:0 3px 10px ${CL[t]}66`:'background:var(--bg3);color:var(--label4);opacity:0.45'}">尾${t}</div>
+        <span style="font-size:12px;color:var(--label3);font-weight:700">${prob}%</span>
+        <span style="font-size:13px;font-weight:800;color:${hit?'var(--green)':'var(--red)'}">${hit?'✅ 中':'❌ 未中'}</span>
+      </div>`;
+    }).join('');
+    
+    let mainColor=r.mainHit>=1?'var(--green)':'var(--red)';
+    let mlColor=r.mlHit>=1?'var(--green)':'var(--red)';
+    let mainBg=r.mainHit>=1?'rgba(52,199,89,.15)':'rgba(255,59,48,.12)';
+    let mlBg=r.mlHit>=1?'rgba(52,199,89,.15)':'rgba(255,59,48,.12)';
+    
+    return`<div style="padding:16px;border-bottom:1px solid var(--sep2)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span style="font-size:16px;font-weight:800;color:var(--label)">${r.date}</span>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <span style="padding:4px 10px;border-radius:10px;background:${mainBg};color:${mainColor};font-weight:800;font-size:12px">主 ${r.mainHit}/2</span>
+          <span style="padding:4px 10px;border-radius:10px;background:${mlBg};color:${mlColor};font-weight:800;font-size:12px">ML ${r.mlHit}/2</span>
         </div>
       </div>
-      <div style="margin-bottom:8px"><span style="font-size:12px;color:var(--label3);font-weight:700">實際開獎（綠=命中TOP10）</span></div>
-      <div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap">${actualBalls}</div>
-      <div style="margin-bottom:8px"><span style="font-size:12px;color:var(--label3);font-weight:700">推薦TOP10（彩色=命中）</span></div>
-      <div style="display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap">${top10Balls}</div>
-      <div style="display:flex;align-items:center;gap:6px"><span style="font-size:12px;color:var(--label3);font-weight:700">推薦尾數</span>${tailBalls}</div>
+      <div style="margin-bottom:6px"><span style="font-size:12px;color:var(--label3);font-weight:700">開獎號碼</span></div>
+      <div style="display:flex;gap:5px;margin-bottom:14px;flex-wrap:wrap">${actualBalls}</div>
+      
+      <div style="background:var(--bg);border-radius:12px;padding:12px;margin-bottom:8px">
+        <div style="font-size:12px;color:var(--label3);font-weight:800;margin-bottom:10px">📊 主系統 TOP2 推薦</div>
+        <div style="display:flex;gap:20px;align-items:flex-start;justify-content:flex-start">${mainTailBalls}</div>
+      </div>
+      <div style="background:var(--bg);border-radius:12px;padding:12px">
+        <div style="font-size:12px;color:var(--label3);font-weight:800;margin-bottom:10px">🤖 ML TOP2 推薦</div>
+        <div style="display:flex;gap:20px;align-items:flex-start;justify-content:flex-start">${mlTailBalls}</div>
+      </div>
     </div>`;
   }).join('');
   
@@ -1485,24 +1562,23 @@ function renderBT(el,A){
     <div class="card-bd">
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
         ${[
-          {label:'TOP 10',val:avgH10,max:5,c:'var(--green)'},
-          {label:'TOP 15',val:avgH15,max:5,c:'var(--blue)'},
-          {label:'TOP 20',val:avgH20,max:5,c:'var(--purple)'},
-          {label:'尾數 TOP1',val:avgTail,max:4,c:'var(--orange)'},
+          {label:'主系統 TOP2',val:mainAtLeast1,pct:mainRate,c:'var(--blue)'},
+          {label:'ML TOP2',val:mlAtLeast1,pct:mlRate,c:'var(--purple)'},
+          {label:'主系統全中2/2',val:mainAll2,pct:(mainAll2/bt.nDraws*100).toFixed(0),c:'var(--green)'},
+          {label:'ML 全中2/2',val:mlAll2,pct:(mlAll2/bt.nDraws*100).toFixed(0),c:'var(--orange)'},
         ].map(item=>{
-          let pct=(parseFloat(item.val)/item.max*100).toFixed(0);
           return`<div style="flex:1;min-width:80px;background:${item.c}10;border-radius:16px;padding:16px 12px;text-align:center;border:1.5px solid ${item.c}40">
-            <div style="font-size:12px;color:var(--label3);font-weight:700;margin-bottom:6px">${item.label}</div>
-            <div style="font-size:28px;font-weight:900;color:${item.c}">${item.val}</div>
-            <div style="font-size:13px;color:var(--label3);margin-top:3px">/ ${item.max} 球 (${pct}%)</div>
+            <div style="font-size:11px;color:var(--label3);font-weight:700;margin-bottom:6px">${item.label}</div>
+            <div style="font-size:24px;font-weight:900;color:${item.c}">${item.pct}%</div>
+            <div style="font-size:12px;color:var(--label3);margin-top:3px">${item.val}/${bt.nDraws}期</div>
           </div>`;
         }).join('')}
       </div>
       <div style="background:var(--bg);border-radius:14px;padding:14px;margin-bottom:0">
-        <div style="font-size:13px;color:var(--label3);font-weight:700;margin-bottom:4px">📊 期望基準</div>
-        <div style="font-size:14px;color:var(--label2);line-height:1.6">
-          隨機選10個號碼，平均命中 <strong>${(10/39*5).toFixed(2)}</strong> 球（${(10/39*5/5*100).toFixed(0)}%）。
-          系統 TOP10 命中 <strong>${avgH10}</strong> 球，${parseFloat(avgH10)>(10/39*5)?`<span style="color:var(--green);font-weight:800">高於隨機 ${((parseFloat(avgH10)/(10/39*5)-1)*100).toFixed(0)}%</span>`:`<span style="color:var(--red);font-weight:800">低於隨機</span>`}
+        <div style="font-size:13px;color:var(--label3);font-weight:700;margin-bottom:4px">📊 數據說明</div>
+        <div style="font-size:13px;color:var(--label2);line-height:1.7">
+          過去 <strong>${bt.nDraws}</strong> 期，主系統推薦至少中1個 <strong style="color:var(--blue)">${mainRate}%</strong>，ML推薦至少中1個 <strong style="color:var(--purple)">${mlRate}%</strong>。<br>
+          <span style="font-size:12px;color:var(--label3)">※ 隨機選2個尾數至少中1個的機率約 67%</span>
         </div>
       </div>
     </div>
@@ -1514,9 +1590,9 @@ function renderBT(el,A){
     <div class="card-bd">${dimHTML}</div>
   </div>
   
-  <div class="section-hdr">逐期回測詳情</div>
+  <div class="section-hdr">逐期對照：TOP2 vs ML vs 實際</div>
   <div class="card">
-    <div class="card-hd"><h3>🎯 每期推薦 vs 實際</h3><p>綠色=命中，灰色=未中</p></div>
+    <div class="card-hd"><h3>🎯 每期推薦 vs 實際開獎</h3><p>彩色球=命中 | 灰色球=沒中 | 上面主系統、下面 ML</p></div>
     ${drawHTML}
   </div>`;
 }
@@ -1525,13 +1601,13 @@ function renderBT(el,A){
 const POS_TAIL={'1_1':{t:2,p:58},'3_1':{t:1,p:57},'3_2':{t:8,p:71},'5_2':{t:5,p:56},'6_2':{t:2,p:62},'7_2':{t:7,p:59},'7_3':{t:4,p:75},'8_2':{t:6,p:60},'8_3':{t:9,p:77},'9_1':{t:4,p:59},'9_2':{t:6,p:59},'9_3':{t:7,p:86},'10_1':{t:1,p:80},'10_3':{t:4,p:58},'11_1':{t:5,p:61},'11_2':{t:1,p:57},'12_1':{t:8,p:79},'12_3':{t:6,p:67},'12_4':{t:4,p:63},'13_1':{t:4,p:89},'13_2':{t:4,p:60},'13_4':{t:4,p:83},'14_1':{t:4,p:64},'14_2':{t:5,p:60},'14_3':{t:6,p:64},'14_4':{t:7,p:100},'15_1':{t:7,p:75},'15_2':{t:3,p:63},'15_3':{t:4,p:59},'16_1':{t:2,p:56},'16_2':{t:6,p:73},'16_3':{t:2,p:65},'16_4':{t:7,p:75},'17_1':{t:1,p:80},'17_2':{t:5,p:67},'17_3':{t:5,p:63},'17_4':{t:3,p:56},'18_2':{t:1,p:57},'18_3':{t:1,p:62},'18_4':{t:5,p:62},'19_2':{t:2,p:67},'19_3':{t:4,p:56},'19_4':{t:4,p:65},'20_3':{t:8,p:56},'20_4':{t:8,p:75},'21_2':{t:4,p:58},'21_3':{t:4,p:56},'21_4':{t:7,p:60},'22_2':{t:3,p:65},'22_3':{t:7,p:59},'22_4':{t:5,p:75},'22_5':{t:4,p:63},'23_2':{t:2,p:70},'23_3':{t:3,p:56},'23_4':{t:1,p:61},'23_5':{t:7,p:80},'24_2':{t:8,p:60},'24_3':{t:0,p:59},'24_4':{t:8,p:59},'24_5':{t:9,p:78},'25_2':{t:4,p:71},'25_3':{t:7,p:57},'25_4':{t:2,p:61},'25_5':{t:3,p:80},'26_2':{t:1,p:60},'26_3':{t:4,p:73},'26_4':{t:2,p:56},'26_5':{t:8,p:65},'27_2':{t:4,p:57},'27_3':{t:7,p:63},'27_4':{t:5,p:63},'27_5':{t:1,p:73},'28_3':{t:1,p:65},'28_4':{t:8,p:58},'28_5':{t:8,p:57},'29_3':{t:8,p:60},'29_4':{t:7,p:58},'29_5':{t:1,p:63},'30_3':{t:5,p:67},'30_4':{t:1,p:67},'31_4':{t:1,p:58},'31_5':{t:1,p:57},'32_3':{t:2,p:78},'32_4':{t:6,p:58},'32_5':{t:6,p:56},'33_4':{t:3,p:63},'34_4':{t:8,p:59},'34_5':{t:8,p:57},'36_4':{t:4,p:57},'36_5':{t:2,p:56},'37_4':{t:3,p:67},'37_5':{t:4,p:59},'38_5':{t:5,p:57}};
 
 /* ═══ 各尾數遺漏N期後的回歸率（%），樣本≥5 ═══ */
-const TAIL_MISS_RATE={0:{0:32,1:34,2:33,3:37,4:27,5:11,6:28,7:35,8:40,9:11,10:75},1:{0:48,1:42,2:50,3:30,4:46,5:62,6:50},2:{0:46,1:42,2:47,3:48,4:32,5:38,6:46,7:57},3:{0:44,1:44,2:44,3:40,4:29,5:40,6:20,7:42,8:29,9:40},4:{0:43,1:46,2:36,3:41,4:51,5:42,6:27,7:50},5:{0:44,1:40,2:44,3:52,4:34,5:24,6:50,7:50},6:{0:44,1:45,2:42,3:44,4:37,5:41,6:46,7:43},7:{0:46,1:48,2:51,3:46,4:36,5:67,6:17,7:20},8:{0:43,1:41,2:45,3:51,4:50,5:44,6:56},9:{0:39,1:42,2:47,3:44,4:40,5:43,6:42,7:43}};
+const TAIL_MISS_RATE={0:{0:31,1:34,2:33,3:37,4:27,5:11,6:28,7:35,8:40,9:11,10:75},1:{0:48,1:42,2:50,3:30,4:46,5:62,6:50},2:{0:46,1:42,2:46,3:48,4:32,5:38,6:46,7:57},3:{0:43,1:44,2:44,3:40,4:31,5:40,6:20,7:42,8:29,9:40},4:{0:43,1:46,2:36,3:41,4:52,5:42,6:27,7:50},5:{0:44,1:40,2:44,3:52,4:34,5:24,6:50,7:50},6:{0:44,1:45,2:42,3:44,4:37,5:41,6:46,7:43},7:{0:46,1:48,2:51,3:46,4:36,5:67,6:17,7:20},8:{0:43,1:41,2:45,3:52,4:50,5:44,6:56},9:{0:39,1:42,2:47,3:44,4:40,5:43,6:42,7:43}};
 
 /* ═══ 機器學習模型權重（LogisticRegression, 507期訓練, 回測93%）═══ */
-const ML_MEAN=[3150.9214,22.9770,1.3606,0.4270,0.4271,0.4274,0.7679,2.5222,4.5000,2.5809,0.4268];
-const ML_STD=[371.3118,38.3670,1.7950,0.2270,0.1652,0.1198,1.2114,1.7279,2.8723,1.0574,0.4946];
-const ML_W=[0.0946,0.3102,0.0596,0.1046,-0.0033,-0.0443,0.0179,-0.0012,0.0548,0.0148,-0.0319];
-const ML_B=-0.3007;
+const ML_MEAN=[3158.5884,22.9797,1.3607,0.4268,0.4270,0.4273,0.7668,2.5273,4.5000,2.5781,0.4264];
+const ML_STD=[371.4569,38.3706,1.7937,0.2268,0.1651,0.1198,1.2104,1.7288,2.8723,1.0578,0.4946];
+const ML_W=[0.0937,0.3122,0.0605,0.1057,-0.0051,-0.0424,0.0185,-0.0016,0.0568,0.0150,-0.0332];
+const ML_B=-0.3016;
 
 /* ═══ RENDER RECOMMEND (with backtest summary) ═══ */
 function renderRec(el,A){
@@ -1843,13 +1919,13 @@ function renderRec(el,A){
         <div style="font-size:14px;color:var(--label2);line-height:1.6">
           ${inPref?`✅ 模型推薦的 <strong style="color:${CL[top1tail]}">尾${top1tail}</strong> 在週${DOW_NAME[nextDow]}偏好名單中，信心加持！`:`⚠️ 模型推薦 <strong style="color:${CL[top1tail]}">尾${top1tail}</strong> 不在週${DOW_NAME[nextDow]}偏好中。可考慮改選 <strong style="color:${CL[bestDowTail]}">尾${bestDowTail}</strong>（週${DOW_NAME[nextDow]}最偏好）`}
         </div>
-        <div style="font-size:13px;font-weight:700;color:var(--blue);margin-top:10px;padding:10px;background:var(--blue)08;border-radius:10px;text-align:center">🎯 推薦 2 個尾數 → <strong style="font-size:18px">尾${t3[0].tail}</strong> + <strong style="font-size:18px">尾${t3[1].tail}</strong>（807期回測命中率84.3%）</div>
+        <div style="font-size:13px;font-weight:700;color:var(--blue);margin-top:10px;padding:10px;background:var(--blue)08;border-radius:10px;text-align:center">🎯 推薦 2 個尾數 → <strong style="font-size:18px">尾${t3[0].tail}</strong> + <strong style="font-size:18px">尾${t3[1].tail}</strong>（809期回測命中率84.3%）</div>
         ${hotSwapped?`<div style="margin-top:8px;padding:10px;background:var(--orange)10;border:1.5px solid var(--orange)40;border-radius:10px;font-size:13px;color:var(--orange)">🔥 ${hotSwapMsg}</div>`:''}
         ${(()=>{let msgs=[];t3.slice(0,2).forEach(r=>{let ci=coolInfo(r.tail);if(ci&&ci.cooling) msgs.push(`❄️ 尾${r.tail}遺漏${ci.miss}期（回歸率${ci.rate}%・${ci.conf}）注意冷卻風險`);});return msgs.length>0?`<div style="margin-top:8px;padding:10px;background:var(--blue)10;border:1.5px solid var(--blue)40;border-radius:10px;font-size:13px;color:var(--blue)">${msgs.join('<br>')}</div>`:'';})()}
         ${burstMsg?`<div style="margin-top:8px;padding:10px;background:var(--green)10;border:1.5px solid var(--green)40;border-radius:10px;font-size:13px;color:var(--green)">🔥 爆發提示：${burstMsg}</div>`:''}
         ${posMatches.length>0?`<div style="margin-top:8px;padding:10px;background:var(--purple)10;border:1.5px solid var(--purple)40;border-radius:10px;font-size:13px;color:var(--purple)">📍 位置規律加分：${posMatches.map(p=>`${String(p.num).padStart(2,'0')}號在第${p.pos}支→尾${p.tail}(${p.pct}%)`).join('、')}</div>`:''}
         <div style="margin-top:12px;padding:12px;background:linear-gradient(135deg,var(--blue)08,var(--purple)08);border:2px solid var(--blue)40;border-radius:12px">
-          <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px">🤖 機器學習預測（LogReg, 807期回測90.7%）</div>
+          <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px">🤖 機器學習預測（LogReg, 809期回測90.7%）</div>
           <div style="font-size:15px;font-weight:800;color:var(--label);margin-bottom:8px">推薦：<strong style="color:var(--blue);font-size:18px">尾${mlRk[0].tail}</strong> + <strong style="color:var(--blue);font-size:18px">尾${mlRk[1].tail}</strong></div>
           <div style="font-size:12px;color:var(--label3);margin-bottom:4px">10個尾數機率排名：</div>
           <div style="display:flex;flex-wrap:wrap;gap:4px">
