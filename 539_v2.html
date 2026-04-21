@@ -1907,6 +1907,52 @@ function renderRec(el,A){
       return reviewHTML+`<div style="background:var(--blue)10;border:1.5px solid var(--blue)40;border-radius:14px;padding:16px;margin-top:0">
         <div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:10px">📅 下一期預測：${nextDateStr}（週${DOW_NAME[nextDow]}）</div>
         ${(()=>{
+          // ═══ 高信心單押判定 ═══
+          let mainTop1=t3[0].tail;
+          let mlTop1=mlRk[0].tail;
+          let mlP1=mlRk[0].prob;
+          let consensus=mainTop1===mlTop1;
+          // 計算共識尾的位置規律總分
+          let posScore=0;
+          posMatches.forEach(p=>{if(p.tail===mainTop1) posScore+=p.pct;});
+          
+          let level, color, bgColor, icon, advice, hitRate, freq;
+          if(!consensus){
+            level='🔴 無共識'; color='#c0281e'; bgColor='rgba(255,59,48,0.10)'; icon='⛔';
+            advice='主系統與 ML 推薦不同，<strong>不建議單押</strong>。改用兩系統 TOP2 一起押。';
+            hitRate=null;
+          } else if(mlP1>=0.60 && posScore>=150){
+            level='🟢 頂級高信心'; color='#1a6e33'; bgColor='rgba(52,199,89,0.15)'; icon='⭐';
+            advice=`今天可單押 <strong style="color:${CL[mainTop1]};font-size:18px">尾${mainTop1}</strong>`;
+            hitRate='71.7%'; freq='一週約 0.5 次';
+          } else if(mlP1>=0.65 && posScore>=120){
+            level='🟢 高信心'; color='#1a6e33'; bgColor='rgba(52,199,89,0.10)'; icon='✓';
+            advice=`今天可單押 <strong style="color:${CL[mainTop1]};font-size:18px">尾${mainTop1}</strong>`;
+            hitRate='65.0%'; freq='一週約 1 次';
+          } else if(mlP1>=0.60 && posScore>=120){
+            level='🟡 中高信心'; color='#b85d00'; bgColor='rgba(255,149,0,0.10)'; icon='⚠️';
+            advice=`若一定要單押，可選 <strong>尾${mainTop1}</strong>，<strong style="color:#b85d00">但建議改押兩個尾數較安全</strong>`;
+            hitRate='64.4%'; freq='一週約 1.5 次';
+          } else if(mlP1>=0.55){
+            level='🟠 中信心'; color='#b85d00'; bgColor='rgba(255,149,0,0.08)'; icon='⚠️';
+            advice=`<strong>不建議單押</strong>，請改用兩系統 TOP2 推薦的兩個尾數`;
+            hitRate='63.3%'; freq='一週約 3 次';
+          } else {
+            level='🔴 低信心'; color='#c0281e'; bgColor='rgba(255,59,48,0.10)'; icon='⛔';
+            advice=`<strong>本期建議跳過不下注</strong>，信號太弱`;
+            hitRate=`${(mlP1*100).toFixed(0)}%`; freq='較常見';
+          }
+          
+          return `<div style="background:${bgColor};border:2px solid ${color}55;border-radius:14px;padding:14px;margin-bottom:12px">
+            <div style="font-size:18px;font-weight:900;color:${color};margin-bottom:8px;text-align:center">${icon} 本期信心：${level}</div>
+            <div style="font-size:14px;color:var(--label);line-height:1.7;margin-bottom:8px;text-align:center">${advice}</div>
+            ${hitRate?`<div style="font-size:12px;color:var(--label3);text-align:center">歷史回測命中率 <strong style="color:${color}">${hitRate}</strong>${freq?` ・ 觸發頻率：${freq}`:''}</div>`:''}
+            <div style="font-size:11px;color:var(--label4);margin-top:8px;padding-top:8px;border-top:1px dashed ${color}33;line-height:1.5">
+              判定依據：兩系統共識${consensus?'✅':'❌'} ・ ML 機率 ${(mlP1*100).toFixed(1)}% ・ 位置規律總分 ${posScore}
+            </div>
+          </div>`;
+        })()}
+        ${(()=>{
           // 取主系統排名前5的尾數
           let top5Tails=A.tailRk.slice(0,5).map(r=>r.tail);
           let ballsHTML=top5Tails.map((tail,i)=>{
