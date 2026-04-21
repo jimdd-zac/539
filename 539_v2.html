@@ -1584,12 +1584,6 @@ function renderBT(el,A){
     </div>
   </div>
   
-  <div class="section-hdr">各維度表現 ＋ 權重修正</div>
-  <div class="card">
-    <div class="card-hd"><h3>🔧 自適應權重</h3><p>根據回測命中率自動調整各維度權重（50%表現 + 50%預設）</p></div>
-    <div class="card-bd">${dimHTML}</div>
-  </div>
-  
   <div class="section-hdr">逐期對照：TOP2 vs ML vs 實際</div>
   <div class="card">
     <div class="card-hd"><h3>🎯 每期推薦 vs 實際開獎</h3><p>彩色球=命中 | 灰色球=沒中 | 上面主系統、下面 ML</p></div>
@@ -1911,22 +1905,51 @@ function renderRec(el,A){
         </div>`;
       }
       return reviewHTML+`<div style="background:var(--blue)10;border:1.5px solid var(--blue)40;border-radius:14px;padding:16px;margin-top:0">
-        <div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:4px">📅 下一期預測：${nextDateStr}（週${DOW_NAME[nextDow]}）</div>
-        <div style="font-size:13px;color:var(--label3);margin-bottom:10px">星期偏好 TOP3 尾數</div>
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
-          ${pref.map((t,i)=>`<div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:11px;color:var(--label3)">${i===0?'最偏好':i===1?'次偏好':'第三'}</span><span style="display:inline-block;width:40px;height:40px;line-height:40px;text-align:center;border-radius:50%;font-weight:900;font-size:18px;background:${CL[t]};color:#fff">${t}</span></div>`).join('')}
-        </div>
-        <div style="font-size:14px;color:var(--label2);line-height:1.6">
-          ${inPref?`✅ 模型推薦的 <strong style="color:${CL[top1tail]}">尾${top1tail}</strong> 在週${DOW_NAME[nextDow]}偏好名單中，信心加持！`:`⚠️ 模型推薦 <strong style="color:${CL[top1tail]}">尾${top1tail}</strong> 不在週${DOW_NAME[nextDow]}偏好中。可考慮改選 <strong style="color:${CL[bestDowTail]}">尾${bestDowTail}</strong>（週${DOW_NAME[nextDow]}最偏好）`}
-        </div>
-        <div style="font-size:13px;font-weight:700;color:var(--blue);margin-top:10px;padding:10px;background:var(--blue)08;border-radius:10px;text-align:center">🎯 推薦 2 個尾數 → <strong style="font-size:18px">尾${t3[0].tail}</strong> + <strong style="font-size:18px">尾${t3[1].tail}</strong>（809期回測命中率84.3%）</div>
+        <div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:10px">📅 下一期預測：${nextDateStr}（週${DOW_NAME[nextDow]}）</div>
+        ${(()=>{
+          // 取主系統排名前5的尾數
+          let top5Tails=A.tailRk.slice(0,5).map(r=>r.tail);
+          let ballsHTML=top5Tails.map((tail,i)=>{
+            let isTop2=i<2;
+            let medal=i===0?'🥇':(i===1?'🥈':'');
+            let ballSize=isTop2?60:46;
+            let fontSize=isTop2?28:20;
+            let glow=isTop2?`box-shadow:0 0 0 3px var(--orange), 0 4px 12px ${CL[tail]}77`:`box-shadow:0 2px 6px ${CL[tail]}44`;
+            return `<div style="display:inline-flex;flex-direction:column;align-items:center;margin:5px 7px;position:relative">
+              ${medal?`<span style="position:absolute;top:-8px;right:-4px;font-size:18px;z-index:2">${medal}</span>`:''}
+              <span style="display:inline-block;width:${ballSize}px;height:${ballSize}px;line-height:${ballSize}px;text-align:center;border-radius:50%;font-weight:900;font-size:${fontSize}px;background:${CL[tail]};color:#fff;${glow}">${tail}</span>
+            </div>`;
+          }).join('');
+          return `<div style="font-size:13px;font-weight:700;color:var(--blue);margin-top:10px;padding:14px;background:var(--blue)08;border-radius:12px;text-align:center">
+            <div style="margin-bottom:12px">🎯 主系統推薦尾數 TOP 5 <span style="font-weight:500;color:var(--label3)">（🥇🥈 = 主推）</span></div>
+            <div style="display:flex;justify-content:center;flex-wrap:wrap;align-items:flex-end">${ballsHTML}</div>
+          </div>`;
+        })()}
         ${hotSwapped?`<div style="margin-top:8px;padding:10px;background:var(--orange)10;border:1.5px solid var(--orange)40;border-radius:10px;font-size:13px;color:var(--orange)">🔥 ${hotSwapMsg}</div>`:''}
         ${(()=>{let msgs=[];t3.slice(0,2).forEach(r=>{let ci=coolInfo(r.tail);if(ci&&ci.cooling) msgs.push(`❄️ 尾${r.tail}遺漏${ci.miss}期（回歸率${ci.rate}%・${ci.conf}）注意冷卻風險`);});return msgs.length>0?`<div style="margin-top:8px;padding:10px;background:var(--blue)10;border:1.5px solid var(--blue)40;border-radius:10px;font-size:13px;color:var(--blue)">${msgs.join('<br>')}</div>`:'';})()}
         ${burstMsg?`<div style="margin-top:8px;padding:10px;background:var(--green)10;border:1.5px solid var(--green)40;border-radius:10px;font-size:13px;color:var(--green)">🔥 爆發提示：${burstMsg}</div>`:''}
         ${posMatches.length>0?`<div style="margin-top:8px;padding:10px;background:var(--purple)10;border:1.5px solid var(--purple)40;border-radius:10px;font-size:13px;color:var(--purple)">📍 位置規律加分：${posMatches.map(p=>`${String(p.num).padStart(2,'0')}號在第${p.pos}支→尾${p.tail}(${p.pct}%)`).join('、')}</div>`:''}
         <div style="margin-top:12px;padding:12px;background:linear-gradient(135deg,var(--blue)08,var(--purple)08);border:2px solid var(--blue)40;border-radius:12px">
           <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px">🤖 機器學習預測（LogReg, 809期回測90.7%）</div>
-          <div style="font-size:15px;font-weight:800;color:var(--label);margin-bottom:8px">推薦：<strong style="color:var(--blue);font-size:18px">尾${mlRk[0].tail}</strong> + <strong style="color:var(--blue);font-size:18px">尾${mlRk[1].tail}</strong></div>
+          ${(()=>{
+            // ML 前5名尾數
+            let ml5Tails=mlRk.slice(0,5).map(r=>r.tail);
+            let ballsHTML=ml5Tails.map((tail,i)=>{
+              let isTop2=i<2;
+              let medal=i===0?'🥇':(i===1?'🥈':'');
+              let ballSize=isTop2?60:46;
+              let fontSize=isTop2?28:20;
+              let glow=isTop2?`box-shadow:0 0 0 3px var(--blue), 0 4px 12px ${CL[tail]}77`:`box-shadow:0 2px 6px ${CL[tail]}44`;
+              return `<div style="display:inline-flex;flex-direction:column;align-items:center;margin:5px 7px;position:relative">
+                ${medal?`<span style="position:absolute;top:-8px;right:-4px;font-size:18px;z-index:2">${medal}</span>`:''}
+                <span style="display:inline-block;width:${ballSize}px;height:${ballSize}px;line-height:${ballSize}px;text-align:center;border-radius:50%;font-weight:900;font-size:${fontSize}px;background:${CL[tail]};color:#fff;${glow}">${tail}</span>
+              </div>`;
+            }).join('');
+            return `<div style="font-size:15px;font-weight:800;color:var(--label);margin-bottom:10px;text-align:center">
+              <div style="margin-bottom:12px;color:var(--blue)">🤖 ML 推薦尾數 TOP 5 <span style="font-size:12px;font-weight:500;color:var(--label3)">（🥇🥈 = 主推）</span></div>
+              <div style="display:flex;justify-content:center;flex-wrap:wrap;align-items:flex-end">${ballsHTML}</div>
+            </div>`;
+          })()}
           <div style="font-size:12px;color:var(--label3);margin-bottom:4px">10個尾數機率排名：</div>
           <div style="display:flex;flex-wrap:wrap;gap:4px">
             ${mlRk.map((r,i)=>`<span style="font-size:11px;padding:3px 8px;border-radius:8px;background:${i<2?'var(--blue)15':'var(--bg)'};color:${i<2?'var(--blue)':'var(--label3)'};font-weight:${i<2?800:600};border:1px solid ${i<2?'var(--blue)40':'var(--sep2)'}">#${i+1} 尾${r.tail} ${(r.prob*100).toFixed(1)}%</span>`).join('')}
@@ -1942,11 +1965,6 @@ function renderRec(el,A){
         </div>
       </div>`;
     })()}
-  </div></div>
-
-  <div class="section-hdr">推薦號碼 TOP 10</div>
-  <div class="card"><div class="card-bd">
-    ${A.numRk.slice(0,10).map((r,i)=>{let mx=A.numRk[0].score;return`<div class="row"><span class="rank-num ${i<3?['rank-1','rank-2','rank-3'][i]:''}">${i<3?['①','②','③'][i]:i+1}</span>${bl(r.num,38)}${br(r.score/mx*100,CL[r.num%10],18)}<span style="font-size:17px;color:var(--label);font-weight:800;min-width:46px;text-align:right">${r.score.toFixed(1)}</span></div>`;}).join('')}
   </div></div>
 
   <div class="section-hdr">單雙機率試算</div>
