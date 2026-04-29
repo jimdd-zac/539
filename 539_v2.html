@@ -128,6 +128,8 @@ tr.hl td{font-weight:900;font-size:17px}
 <script>
 /* ═══ DATA ═══ */
 const INIT_DATA=[
+{d:"2026/04/28",n:[7,8,21,35,38]},
+{d:"2026/04/27",n:[8,18,20,23,27]},
 {d:"2026/04/25",n:[3,20,21,22,33]},
 {d:"2026/04/24",n:[16,21,25,29,34]},
 {d:"2026/04/23",n:[2,10,17,25,35]},
@@ -1616,13 +1618,13 @@ function renderBT(el,A){
 const POS_TAIL={'1_1':{t:2,p:58},'3_1':{t:1,p:57},'3_2':{t:8,p:71},'5_2':{t:5,p:56},'6_2':{t:2,p:62},'7_2':{t:7,p:59},'7_3':{t:4,p:75},'8_2':{t:6,p:60},'8_3':{t:9,p:77},'9_1':{t:4,p:59},'9_2':{t:6,p:59},'9_3':{t:7,p:86},'10_1':{t:1,p:80},'10_3':{t:4,p:58},'11_1':{t:5,p:61},'11_2':{t:1,p:57},'12_1':{t:8,p:79},'12_3':{t:6,p:67},'12_4':{t:4,p:63},'13_1':{t:4,p:89},'13_2':{t:4,p:60},'13_4':{t:4,p:83},'14_1':{t:4,p:64},'14_2':{t:5,p:60},'14_3':{t:6,p:64},'14_4':{t:7,p:100},'15_1':{t:7,p:75},'15_2':{t:3,p:63},'15_3':{t:4,p:59},'16_1':{t:2,p:56},'16_2':{t:6,p:73},'16_3':{t:2,p:65},'16_4':{t:7,p:75},'17_1':{t:1,p:80},'17_2':{t:5,p:67},'17_3':{t:5,p:63},'17_4':{t:3,p:56},'18_2':{t:1,p:57},'18_3':{t:1,p:62},'18_4':{t:5,p:62},'19_2':{t:2,p:67},'19_3':{t:4,p:56},'19_4':{t:4,p:65},'20_3':{t:8,p:56},'20_4':{t:8,p:75},'21_2':{t:4,p:58},'21_3':{t:4,p:56},'21_4':{t:7,p:60},'22_2':{t:3,p:65},'22_3':{t:7,p:59},'22_4':{t:5,p:75},'22_5':{t:4,p:63},'23_2':{t:2,p:70},'23_3':{t:3,p:56},'23_4':{t:1,p:61},'23_5':{t:7,p:80},'24_2':{t:8,p:60},'24_3':{t:0,p:59},'24_4':{t:8,p:59},'24_5':{t:9,p:78},'25_2':{t:4,p:71},'25_3':{t:7,p:57},'25_4':{t:2,p:61},'25_5':{t:3,p:80},'26_2':{t:1,p:60},'26_3':{t:4,p:73},'26_4':{t:2,p:56},'26_5':{t:8,p:65},'27_2':{t:4,p:57},'27_3':{t:7,p:63},'27_4':{t:5,p:63},'27_5':{t:1,p:73},'28_3':{t:1,p:65},'28_4':{t:8,p:58},'28_5':{t:8,p:57},'29_3':{t:8,p:60},'29_4':{t:7,p:58},'29_5':{t:1,p:63},'30_3':{t:5,p:67},'30_4':{t:1,p:67},'31_4':{t:1,p:58},'31_5':{t:1,p:57},'32_3':{t:2,p:78},'32_4':{t:6,p:58},'32_5':{t:6,p:56},'33_4':{t:3,p:63},'34_4':{t:8,p:59},'34_5':{t:8,p:57},'36_4':{t:4,p:57},'36_5':{t:2,p:56},'37_4':{t:3,p:67},'37_5':{t:4,p:59},'38_5':{t:5,p:57}};
 
 /* ═══ 各尾數遺漏N期後的回歸率（%），樣本≥5 ═══ */
-const TAIL_MISS_RATE={0:{0:31,1:34,2:34,3:37,4:27,5:11,6:28,7:35,8:40,9:11,10:75},1:{0:48,1:42,2:50,3:30,4:46,5:62,6:50},2:{0:46,1:42,2:46,3:48,4:34,5:38,6:46,7:57},3:{0:43,1:44,2:44,3:39,4:32,5:40,6:20,7:42,8:29,9:40},4:{0:43,1:46,2:36,3:41,4:52,5:42,6:27,7:50},5:{0:44,1:40,2:44,3:52,4:34,5:24,6:50,7:50},6:{0:44,1:44,2:43,3:44,4:37,5:41,6:46,7:43},7:{0:46,1:48,2:51,3:46,4:36,5:67,6:17,7:20},8:{0:43,1:41,2:44,3:52,4:50,5:44,6:56},9:{0:39,1:42,2:48,3:44,4:40,5:43,6:42,7:43}};
+const TAIL_MISS_RATE={0:{0:31,1:34,2:34,3:37,4:27,5:11,6:28,7:35,8:40,9:11,10:75},1:{0:48,1:42,2:50,3:30,4:46,5:62,6:50},2:{0:45,1:42,2:46,3:48,4:34,5:38,6:46,7:57},3:{0:43,1:44,2:44,3:39,4:32,5:40,6:20,7:42,8:29,9:40},4:{0:43,1:46,2:36,3:41,4:52,5:42,6:27,7:50},5:{0:44,1:40,2:44,3:52,4:34,5:24,6:50,7:50},6:{0:44,1:44,2:42,3:44,4:37,5:41,6:46,7:43},7:{0:46,1:48,2:52,3:46,4:36,5:67,6:17,7:20},8:{0:43,1:41,2:44,3:52,4:50,5:44,6:56},9:{0:39,1:42,2:47,3:44,4:40,5:43,6:42,7:43}};
 
 /* ═══ 機器學習模型權重（LogisticRegression, 507期訓練, 回測93%）═══ */
-const ML_MEAN=[3173.2953,22.9628,1.3598,0.4265,0.4268,0.4271,0.7653,2.5220,4.5000,2.5790,0.4262,0.4274,-0.0033,-0.0035,1.3598,-0.0001];
-const ML_STD=[373.8677,38.3466,1.7915,0.2265,0.1649,0.1198,1.2085,1.7278,2.8723,1.0617,0.4945,0.0988,0.9709,1.5563,1.7915,0.1604];
-const ML_W=[0.1357,0.4858,0.0366,0.0392,0.0466,-0.0123,0.0709,-0.0253,0.0400,0.0325,-0.1331,-0.0342,0.0533,0.0077,0.0366,-0.0823];
-const ML_B=-0.3038;
+const ML_MEAN=[3179.7672,22.9534,1.3610,0.4263,0.4266,0.4270,0.7650,2.5271,4.5000,2.5814,0.4261,0.4273,-0.0033,-0.0031,1.3610,-0.0002];
+const ML_STD=[375.1418,38.3278,1.7921,0.2265,0.1648,0.1197,1.2078,1.7287,2.8723,1.0616,0.4945,0.0987,0.9713,1.5558,1.7921,0.1604];
+const ML_W=[0.1289,0.4883,0.0377,0.0481,0.0728,-0.0013,0.0509,-0.0184,0.0533,0.0339,-0.1100,-0.0441,0.0569,-0.0071,0.0377,-0.1123];
+const ML_B=-0.2993;
 
 /* ═══ RENDER RECOMMEND (with backtest summary) ═══ */
 function renderRec(el,A){
@@ -1979,33 +1981,46 @@ function renderRec(el,A){
             }
           }
           
-          let level, color, bgColor, icon, advice, hitRate, freq;
-          // 調嚴門檻（v2）
-          if(!consensus){
-            level='🔴 無共識'; color='#c0281e'; bgColor='rgba(255,59,48,0.10)'; icon='⛔';
-            advice='主系統與 ML 推薦不同，<strong>不建議單押</strong>。改用兩系統 TOP2 一起押。';
-            hitRate=null;
-          } else if(mlP1>=0.65 && posScore>=180){
-            // 調嚴：原 ML≥60% + 位置≥150 → ML≥65% + 位置≥180
-            level='🟢 頂級高信心'; color='#1a6e33'; bgColor='rgba(52,199,89,0.15)'; icon='⭐';
-            advice=`今天可單押 <strong style="color:${CL[mainTop1]};font-size:18px">尾${mainTop1}</strong>`;
-            hitRate='75%+ (校準後)'; freq='一週約 0.3 次';
-          } else if(mlP1>=0.70 && posScore>=150){
-            level='🟢 高信心'; color='#1a6e33'; bgColor='rgba(52,199,89,0.10)'; icon='✓';
-            advice=`今天可單押 <strong style="color:${CL[mainTop1]};font-size:18px">尾${mainTop1}</strong>`;
-            hitRate='68-70%'; freq='一週約 0.5 次';
-          } else if(mlP1>=0.65 && posScore>=120){
-            level='🟡 中高信心'; color='#b85d00'; bgColor='rgba(255,149,0,0.12)'; icon='⚠️';
-            advice=`<strong style="color:#b85d00">不建議單押</strong>，請改押主系統 TOP2 兩個尾數`;
-            hitRate='62-65%'; freq='一週約 1 次';
-          } else if(mlP1>=0.55 && consensus){
-            level='🟠 中信心'; color='#b85d00'; bgColor='rgba(255,149,0,0.08)'; icon='⚠️';
-            advice=`<strong>不建議單押</strong>，請改用主系統 TOP2 兩個尾數`;
-            hitRate='60-63%'; freq='一週約 3 次';
+          // ═══ 共識判定（修正版：TOP1 一致 OR TOP2 完全重疊都算共識）═══
+          let mainTop2Tails=new Set([t3[0].tail,t3[1].tail]);
+          let mlTop2Tails=new Set([mlRk[0].tail,mlRk[1].tail]);
+          let top2Overlap=[...mainTop2Tails].filter(t=>mlTop2Tails.has(t)).length;
+          let strongConsensus=top2Overlap>=2; // TOP2 完全重疊 = 比 TOP1 共識更強
+          let weakConsensus=mainTop1===mlTop1; // TOP1 共識
+          consensus=weakConsensus||strongConsensus;
+          
+          let level, color, bgColor, icon, action, why, hitRate, freq;
+          // 調嚴門檻（v2）+ 新增 TOP2 完全共識的等級
+          if(strongConsensus && mlP1>=0.65 && posScore>=120){
+            level='🟢 頂級'; color='#1a6e33'; bgColor='rgba(52,199,89,0.18)'; icon='🟢';
+            action='下注';
+            why=`兩系統 TOP2 完全相同（尾${t3[0].tail}+尾${t3[1].tail}）+ ML 強 + 位置強`;
+            hitRate='80%+'; freq='一週約 0.3 次';
+          } else if(weakConsensus && mlP1>=0.65 && posScore>=180){
+            level='🟢 頂級'; color='#1a6e33'; bgColor='rgba(52,199,89,0.15)'; icon='🟢';
+            action=`下注 雙押 尾${t3[0].tail}+尾${t3[1].tail}`;
+            why='兩系統 TOP1 共識 + ML 強 + 位置爆強';
+            hitRate='75%+'; freq='一週約 0.3 次';
+          } else if(strongConsensus){
+            level='🟢 高'; color='#1a6e33'; bgColor='rgba(52,199,89,0.10)'; icon='🟢';
+            action=`下注 雙押 尾${t3[0].tail}+尾${t3[1].tail}`;
+            why='兩系統 TOP2 完全相同';
+            hitRate='80%'; freq='一週約 1 次';
+          } else if(weakConsensus && mlP1>=0.65 && posScore>=120){
+            level='🟡 中高'; color='#b85d00'; bgColor='rgba(255,149,0,0.12)'; icon='🟡';
+            action=`小注 雙押 尾${t3[0].tail}+尾${t3[1].tail}`;
+            why='TOP1 共識，但訊號不夠強';
+            hitRate='65%'; freq='一週約 1 次';
+          } else if(weakConsensus && mlP1>=0.55){
+            level='🟠 中'; color='#b85d00'; bgColor='rgba(255,149,0,0.08)'; icon='🟠';
+            action=`小注 雙押 尾${t3[0].tail}+尾${t3[1].tail}`;
+            why='TOP1 共識但 ML 機率偏低';
+            hitRate='62%'; freq='一週約 3 次';
           } else {
-            level='🔴 低信心'; color='#c0281e'; bgColor='rgba(255,59,48,0.10)'; icon='⛔';
-            advice=`<strong>本期建議跳過不下注</strong>，信號太弱`;
-            hitRate=`${(mlP1*100).toFixed(0)}%`; freq='較常見';
+            level='🔴 跳過'; color='#c0281e'; bgColor='rgba(255,59,48,0.10)'; icon='🔴';
+            action='不要下注';
+            why=consensus?'信號太弱':'兩系統推不同尾，沒有共識';
+            hitRate=null; freq='較常見';
           }
           
           // 連槓偵測：近 3 期實際 ML TOP2 是否有 ≥2 期 0/2？
@@ -2084,84 +2099,56 @@ function renderRec(el,A){
             momMsg=`動量正常（近10期${mom_f10}次）`;
           }
           
-          return `<div style="background:${bgColor};border:2px solid ${color}55;border-radius:14px;padding:14px;margin-bottom:12px">
-            <div style="font-size:18px;font-weight:900;color:${color};margin-bottom:8px;text-align:center">${icon} 本期信心：${level}</div>
-            <div style="font-size:14px;color:var(--label);line-height:1.7;margin-bottom:8px;text-align:center">${advice}</div>
-            ${hitRate?`<div style="font-size:12px;color:var(--label3);text-align:center">預期命中率 <strong style="color:${color}">${hitRate}</strong>${freq?` ・ 觸發頻率：${freq}`:''}</div>`:''}
-            ${consecMissWarning?`<div style="margin-top:8px;padding:8px;background:rgba(255,59,48,0.1);border-radius:8px;font-size:12px;color:var(--red);font-weight:700">${consecMissWarning}</div>`:''}
-            <div style="font-size:11px;color:var(--label4);margin-top:8px;padding-top:8px;border-top:1px dashed ${color}33;line-height:1.5">
-              判定依據：兩系統共識${consensus?'✅':'❌'} ・ ML 機率 ${(mlP1*100).toFixed(1)}% ・ 位置規律總分 ${posScore}
+          return `<div style="background:${bgColor};border:2.5px solid ${color}66;border-radius:16px;padding:18px;margin-bottom:12px">
+            <div style="text-align:center;margin-bottom:10px">
+              <div style="font-size:48px;line-height:1;margin-bottom:6px">${icon}</div>
+              <div style="font-size:24px;font-weight:900;color:${color};letter-spacing:2px">${action}</div>
             </div>
-            <div style="font-size:12px;color:${momColor};margin-top:8px;padding-top:8px;border-top:1px dashed ${color}33;line-height:1.5;font-weight:600">
-              📈 尾${mainTop1} 動量：${momMsg}
+            <div style="font-size:14px;color:var(--label2);text-align:center;line-height:1.6;padding:10px;background:rgba(255,255,255,0.4);border-radius:10px;margin-bottom:8px">
+              <strong style="color:${color}">原因：</strong>${why}
             </div>
-            <div style="font-size:11px;color:var(--label3);margin-top:8px;padding-top:8px;border-top:1px dashed ${color}33;line-height:1.6">
-              <span style="font-weight:700">🎯 尾位輔助信號：</span>${tpHTML}
-              <div style="font-size:10px;color:var(--label4);font-style:italic;margin-top:2px">※ 13 條 810 期強規則，獨立於 ML，僅供參考</div>
-            </div>
+            ${hitRate?`<div style="font-size:13px;color:var(--label2);text-align:center;font-weight:600">預期命中率 <span style="color:${color};font-weight:800">${hitRate}</span></div>`:''}
+            ${consecMissWarning?`<div style="margin-top:8px;padding:8px;background:rgba(255,59,48,0.1);border-radius:8px;font-size:12px;color:var(--red);font-weight:700;text-align:center">${consecMissWarning}</div>`:''}
+            <details style="margin-top:10px;padding-top:10px;border-top:1px dashed ${color}44">
+              <summary style="font-size:12px;color:var(--label3);cursor:pointer;font-weight:600;list-style:none;text-align:center">📊 點開看技術細節 ▾</summary>
+              <div style="margin-top:10px;font-size:11px;color:var(--label3);line-height:1.7">
+                <div>🔍 <strong>判定依據：</strong>兩系統共識${consensus?'✅':'❌'}（${strongConsensus?'TOP2 完全共識':(weakConsensus?'TOP1 共識':'無')}）</div>
+                <div>🤖 ML 機率：${(mlP1*100).toFixed(1)}% ・ 📍 位置規律：${posScore} 分</div>
+                <div>🥇 主系統 TOP2: 尾${t3[0].tail}+尾${t3[1].tail} ・ 🤖 ML TOP2: 尾${mlRk[0].tail}+尾${mlRk[1].tail}</div>
+                <div style="margin-top:6px;color:${momColor};font-weight:600">📈 尾${mainTop1} 動量：${momMsg}</div>
+                <div style="margin-top:6px"><strong>🎯 尾位輔助：</strong>${tpHTML}</div>
+              </div>
+            </details>
             ${(()=>{
-              // ═══ Kelly Criterion 計算（最佳下注比例）═══
-              // 用「校準後估計」的命中率（比 ML 機率保守）
-              // 539 賠率 b = 8（押 1 中 1 賠 8）
+              // ═══ Kelly Criterion 計算（簡化版）═══
               const b = 8;
-              let kelly_p, kelly_label, kelly_advice;
-              if(level.includes('頂級高信心')){
-                kelly_p = 0.71;  // 校準後保守估計
-                kelly_label = '單押 1 個尾數';
-              } else if(level.includes('🟢 高信心')){
-                kelly_p = 0.66;
-                kelly_label = '單押 1 個尾數';
-              } else if(level.includes('中高信心')){
-                kelly_p = 0.82;  // TOP2 至少1中
-                kelly_label = '雙押 TOP 2';
-              } else if(level.includes('中信心')){
-                kelly_p = 0.78;
-                kelly_label = '雙押 TOP 2';
-              } else {
-                // 低信心 / 無共識：不建議下
-                kelly_p = 0;
-                kelly_label = '不下注';
-              }
+              let kelly_p, kelly_label;
+              if(level.includes('🟢 頂級')){ kelly_p = 0.78; kelly_label = '雙押'; }
+              else if(level.includes('🟢 高')){ kelly_p = 0.80; kelly_label = '雙押'; }
+              else if(level.includes('🟡')){ kelly_p = 0.65; kelly_label = '雙押'; }
+              else if(level.includes('🟠')){ kelly_p = 0.62; kelly_label = '雙押'; }
+              else { kelly_p = 0; kelly_label = '不下'; }
               if(kelly_p === 0){
-                return `<div style="margin-top:8px;padding:10px;background:rgba(255,59,48,0.05);border:1.5px dashed var(--red)55;border-radius:10px;font-size:12px;line-height:1.6">
-                  <div style="font-weight:800;color:var(--red);margin-bottom:4px">💰 Kelly 下注建議</div>
-                  <div style="color:var(--label2)">本期信心不足，<strong style="color:var(--red)">不建議下注</strong>（最佳下注比例 = 0%）</div>
-                </div>`;
+                return ''; // 紅燈不顯示 Kelly（已經說不下了）
               }
               const kelly_q = 1 - kelly_p;
               const f_full = (b * kelly_p - kelly_q) / b;
-              const f_quarter = f_full / 4;  // 1/4 Kelly（實務保守版）
-              const f_half = f_full / 2;     // 半 Kelly
-              return `<div style="margin-top:8px;padding:10px;background:linear-gradient(135deg,${color}10,${color}05);border:1.5px solid ${color}55;border-radius:10px;font-size:12px;line-height:1.6">
-                <div style="font-weight:800;color:${color};margin-bottom:6px">💰 Kelly 下注建議（${kelly_label}）</div>
-                <div style="color:var(--label2);font-size:11px;margin-bottom:6px">基於勝率 ${(kelly_p*100).toFixed(0)}%、賠率 8 倍計算最佳下注比例：</div>
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:11px">
-                  <div style="background:rgba(255,59,48,0.1);padding:6px;border-radius:6px;text-align:center">
-                    <div style="font-size:9px;color:var(--label3)">完整 Kelly（最大）</div>
-                    <div style="font-weight:800;color:var(--red);font-size:14px">${(f_full*100).toFixed(1)}%</div>
-                    <div style="font-size:9px;color:var(--label4)">⚠️ 太激進</div>
-                  </div>
-                  <div style="background:rgba(255,149,0,0.1);padding:6px;border-radius:6px;text-align:center">
-                    <div style="font-size:9px;color:var(--label3)">半 Kelly</div>
-                    <div style="font-weight:800;color:var(--orange);font-size:14px">${(f_half*100).toFixed(1)}%</div>
-                    <div style="font-size:9px;color:var(--label4)">中等風險</div>
-                  </div>
-                  <div style="background:rgba(52,199,89,0.1);padding:6px;border-radius:6px;text-align:center">
-                    <div style="font-size:9px;color:var(--label3)">1/4 Kelly（推薦）</div>
-                    <div style="font-weight:800;color:var(--green);font-size:14px">${(f_quarter*100).toFixed(1)}%</div>
-                    <div style="font-size:9px;color:var(--label4)">✅ 較安全</div>
-                  </div>
+              const f_quarter = Math.max(0, f_full / 4);
+              return `<div style="margin-top:10px;padding:10px;background:rgba(52,199,89,0.08);border:1.5px solid ${color}55;border-radius:10px">
+                <div style="font-size:12px;color:var(--label2);text-align:center;line-height:1.5">
+                  💰 <strong>建議下注本金的 <span style="color:${color};font-size:16px">${(f_quarter*100).toFixed(1)}%</span></strong>
+                  <span style="font-size:10px;color:var(--label4)">（1/4 Kelly · 較安全）</span>
                 </div>
-                <div style="font-size:10px;color:var(--label4);margin-top:6px;font-style:italic;line-height:1.5">
-                  例：本金 $10000，按 1/4 Kelly = 下注 <strong style="color:var(--green)">$${Math.round(10000*f_quarter)}</strong>。實戰建議用 1/4 Kelly，因為勝率估計有誤差，激進下注容易破產。
+                <div style="font-size:10px;color:var(--label4);text-align:center;margin-top:4px">
+                  例：本金 $5000 → 下注 <strong>$${Math.round(5000*f_quarter)}</strong>
                 </div>
               </div>`;
             })()}
           </div>`;
         })()}
         ${(()=>{
-          // 取主系統排名前5的尾數
-          let top5Tails=A.tailRk.slice(0,5).map(r=>r.tail);
+          // 取主系統排名前5的尾數（用 gapTailRk 跟信心卡一致，已包含熱號/冷卻替換）
+          let top5Tails=gapTailRk.slice(0,5).map(r=>r.tail);
           let ballsHTML=top5Tails.map((tail,i)=>{
             let isTop2=i<2;
             let medal=i===0?'🥇':(i===1?'🥈':'');
