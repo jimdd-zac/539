@@ -2199,6 +2199,29 @@ function renderRec(el,A){
           if(nextDowT0===0) nextDowT0=1;
           if(nextDowT0===6){ tail0Adj-=4.4; tail0Reasons.push({txt:`下期是週六`, val:'-4.4pp'}); }
           
+          // 訊號 5: 尾0 位置規律（從 POS_TAIL 篩選 → 尾0 的所有規則）
+          let tail0PosMatches=[];
+          const tail0PrevSorted=[...A.D[0].n].sort((a,b)=>a-b);
+          tail0PrevSorted.forEach((num,pos)=>{
+            const key=num+'_'+(pos+1);
+            if(POS_TAIL[key]&&POS_TAIL[key].t===0){
+              tail0PosMatches.push({num:num, pos:pos+1, pct:POS_TAIL[key].p});
+              const boost=(POS_TAIL[key].p-32.3); // 跟基準比的加成
+              tail0Adj+=boost;
+              tail0Reasons.push({txt:`${num}號在第${pos+1}支 → 尾0`, val:`${POS_TAIL[key].p}%`, boost:true, special:'pos'});
+            }
+          });
+          
+          // 列出「歷史上指向尾0 的所有位置規律」（即使本期沒觸發也讓使用者知道）
+          let allTail0Rules=[];
+          for(const key in POS_TAIL){
+            if(POS_TAIL[key].t===0){
+              const [num,pos]=key.split('_');
+              allTail0Rules.push({num:parseInt(num), pos:parseInt(pos), pct:POS_TAIL[key].p});
+            }
+          }
+          allTail0Rules.sort((a,b)=>b.pct-a.pct);
+          
           // 限制範圍
           tail0Adj=Math.max(5, Math.min(60, tail0Adj));
           
@@ -2215,6 +2238,24 @@ function renderRec(el,A){
           }).join('');
           if(tail0Reasons.length===0){
             reasonsHTML=`<div style="font-size:11px;color:var(--label3)">本期無特別訊號</div>`;
+          }
+          
+          // 位置規律區塊
+          let posRuleHTML='';
+          if(tail0PosMatches.length>0){
+            posRuleHTML=`<div style="background:rgba(52,199,89,0.1);border-left:3px solid #1a6e33;border-radius:6px;padding:8px;margin-top:8px">
+              <div style="font-size:11px;font-weight:700;color:#1a6e33;margin-bottom:4px">📍 本期觸發尾0 位置規律 (${tail0PosMatches.length} 條)</div>`;
+            tail0PosMatches.forEach(m=>{
+              posRuleHTML+=`<div style="font-size:11px;color:var(--label2);line-height:1.5">• <strong>${m.num}號</strong>在第${m.pos}支 → 尾0 <strong style="color:#1a6e33">${m.pct}%</strong></div>`;
+            });
+            posRuleHTML+=`</div>`;
+          } else {
+            posRuleHTML=`<details style="margin-top:8px"><summary style="font-size:11px;color:var(--label3);cursor:pointer;list-style:none">📍 本期無觸發尾0 位置規律 (歷史共 ${allTail0Rules.length} 條，點開查看) ▾</summary>
+              <div style="background:rgba(0,0,0,0.03);border-radius:6px;padding:8px;margin-top:4px">`;
+            allTail0Rules.forEach(r=>{
+              posRuleHTML+=`<div style="font-size:10px;color:var(--label3);line-height:1.5">• ${r.num}號在第${r.pos}支 → 尾0 (${r.pct}%)</div>`;
+            });
+            posRuleHTML+=`<div style="font-size:9px;color:var(--label4);font-style:italic;margin-top:4px">※ 尾0 在 39 個號碼裡只有 10/20/30 三個號碼，能達到 ≥55% 的位置規律本來就少</div></div></details>`;
           }
           
           return `<div style="background:linear-gradient(135deg,${t0Color}10,${t0Color}05);border:1.5px solid ${t0Color}55;border-radius:12px;padding:12px;margin-bottom:12px">
@@ -2234,6 +2275,7 @@ function renderRec(el,A){
             <div style="background:rgba(255,255,255,0.5);border-radius:8px;padding:8px;line-height:1.5">
               ${reasonsHTML}
             </div>
+            ${posRuleHTML}
           </div>`;
         })()}
         ${(()=>{
